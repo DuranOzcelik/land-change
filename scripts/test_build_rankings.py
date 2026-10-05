@@ -56,8 +56,9 @@ class Split(unittest.TestCase):
         c = br.summarize(CITY | {"name": "C"}, compare(20, 40, unusable=(9, 0)))
         err = {"name": "D", "country": "TR", "experimental": False, "error": "no_imagery"}
         ranked, unavailable = br.split_results([a, b, c, err])
-        self.assertEqual([r["name"] for r in ranked], ["B", "A"])
-        self.assertEqual([(r["name"], r["reason"]) for r in unavailable], [("C", "unusable"), ("D", "no_imagery")])
+        # Cities over a limit stay in the table, marked; only missing images make a city unavailable.
+        self.assertEqual([(r["name"], r.get("warning")) for r in ranked], [("C", "unusable"), ("B", None), ("A", None)])
+        self.assertEqual([(r["name"], r["reason"]) for r in unavailable], [("D", "no_imagery")])
 
 
 class LastSummer(unittest.TestCase):
@@ -93,6 +94,20 @@ class DatePick(unittest.TestCase):
         self.assertEqual(anchor, "2016-01-20")
         # 2016-12-30 is the clearest 2016 date but belongs to the next summer.
         self.assertEqual(dp.pairs("api", -15, 0, anchor, dp.mid_summer("2025", -15)), [("2015-12-22", "2025-01-20")])
+
+    def test_any_season_keeps_both_images_in_one_season(self):
+        dp = self.fake({
+            "2016": [{"date": "2016-03-10", "cloud": 1.0}, {"date": "2016-07-20", "cloud": 40.0}],
+            "2017": [{"date": "2017-11-02", "cloud": 0.0}, {"date": "2017-02-01", "cloud": 9.0}],
+            "2025": [{"date": "2025-03-20", "cloud": 2.0}, {"date": "2025-07-15", "cloud": 50.0}],
+            "2026": [{"date": "2026-08-30", "cloud": 0.0}, {"date": "2027-01-01", "cloud": 0.0}],
+        })
+        got = dp.any_season_pairs("api", 0, 0, [2016, 2017], [2025, 2026], limit=2)
+        # March pair first (clearest pair in one season); the clear November 2017 image has no
+        # partner within 45 days, and 2027 dates are outside the years asked for.
+        self.assertEqual(got, [("2016-03-10", "2025-03-20"), ("2016-07-20", "2026-08-30")])
+        for b, a in got:
+            self.assertLessEqual(dp.season_gap(b, a), dp.MAX_SEASON_GAP)
 
     def test_gap_wraps_around_new_year(self):
         import datepick

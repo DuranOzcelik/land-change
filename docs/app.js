@@ -1721,11 +1721,6 @@
     const p = data.params;
     const all = [...data.cities, ...data.unavailable];
     const continents = CONTINENTS.filter((k) => all.some((c) => c.continent === k));
-    const reason = (c) => {
-      if (c.reason === "unusable") return t("reasonUnusable").replace("{a}", pct(c.unusable_share[0])).replace("{b}", pct(c.unusable_share[1]));
-      if (c.reason === "season") return t("reasonSeason").replace("{n}", num(c.season_gap_days, 0));
-      return t({ no_imagery: "reasonNoImagery", invalid: "reasonInvalid" }[c.reason] || "reasonServer");
-    };
     return `
       <p class="notice">${esc(t("rankLimits"))}</p>
       <p class="meta">${esc(t("rankMethod").replace("{before}", p.before).replace("{after}", p.after)
@@ -1741,7 +1736,14 @@
       <div id="ranking-table">${rankingTable(data)}</div>
       ${data.unavailable.length ? `<div><p class="subhead">${esc(t("rankUnavailable"))}</p>
         <ul class="unavailable">${data.unavailable.map((c) => `
-          <li><span>${esc(cityName(c))}, ${esc(countryName(c.country))}</span><span>${esc(reason(c))}</span></li>`).join("")}</ul></div>` : ""}`;
+          <li><span>${esc(cityName(c))}, ${esc(countryName(c.country))}</span><span>${esc(rankReason(c.reason, c))}</span></li>`).join("")}</ul></div>` : ""}`;
+  }
+
+  // Why a city broke a limit (ranked with a warning) or could not be calculated.
+  function rankReason(kind, c) {
+    if (kind === "unusable") return t("reasonUnusable").replace("{a}", pct(c.unusable_share[0])).replace("{b}", pct(c.unusable_share[1]));
+    if (kind === "season") return t("reasonSeason").replace("{n}", num(c.season_gap_days, 0));
+    return t({ no_imagery: "reasonNoImagery", invalid: "reasonInvalid" }[kind] || "reasonServer");
   }
 
   function rankingTable(data) {
@@ -1769,7 +1771,10 @@
         <tr data-city="${data.cities.indexOf(c)}">
           <td>${i + 1}</td>
           <td><button type="button" class="row-link" data-city="${data.cities.indexOf(c)}">${esc(cityName(c))}</button>
-            <small>${esc(countryName(c.country))}</small>${c.experimental ? ` <span class="tag">${esc(t("experimental"))}</span>` : ""}</td>
+            <small>${esc(countryName(c.country))}</small>
+            ${c.dates_picked ? `<small>${esc(t("rankDates").replace("{a}", c.before_date).replace("{b}", c.after_date))}${c.off_season ? ` · ${esc(t("rankOffSeason"))}` : ""}</small>` : ""}
+            ${c.experimental ? `<span class="tag">${esc(t("experimental"))}</span>` : ""}
+            ${c.warning ? `<span class="tag warn">${esc(rankReason(c.warning, c))}</span>` : ""}</td>
           <td class="col-continent">${esc(continentName(c.continent))}</td>
           <td>${pct(c.built_before)}</td><td>${pct(c.built_after)}</td>
           <td>${c.built_change_pts > 0 ? "+" : ""}${num(c.built_change_pts)}</td><td>${num(c.built_km2)}</td>
@@ -1782,8 +1787,8 @@
     $("size").value = String(params.size_km);
     setCell(params.cell_m);
     setMode("change");
-    $("before").value = params.before;
-    $("after").value = params.after;
+    $("before").value = city.dates_picked ? city.before_date : params.before;
+    $("after").value = city.dates_picked ? city.after_date : params.after;
     setPlace(city.lat, city.lon, cityName(city));
     $("controls").requestSubmit();
   }

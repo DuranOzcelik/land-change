@@ -4,10 +4,12 @@ The live API is called once per city, one request at a time, with a pause betwee
 and retries on server or network errors. Each city's summary is cached in
 scripts/.rankings_cache.json, so an interrupted run continues where it stopped.
 
-A city goes to the "unavailable" list instead of the table when either image has more than
-5% cloudy or missing area, or the two images are more than 45 days apart in the season.
-Before giving up on a city, up to three clearer date pairs from the same season of the same two
-years are tried (see datepick.py); the dates used are stored with each city.
+When either image has more than 5% cloudy or missing area, or the two images are more than
+45 days apart in the season, clearer dates are tried (see datepick.py): first up to three pairs
+near the summer dates the API picked, then up to five same-season pairs from any time of year,
+with one year of slack on each side. A city that still breaks a limit is ranked with a "warning"
+naming the limit; only a city with no usable images at all goes to the "unavailable" list. The
+dates used are stored with each city.
 
 Usage:
   python scripts/build_rankings.py                       # reviewed rows only
@@ -74,17 +76,15 @@ def exclusion(row):
 
 
 def split_results(results):
-    """Sort cached results into the ranked table and the unavailable list."""
+    """Sort cached results into the ranked table (with a warning when a limit is broken) and the
+    unavailable list (no usable images at all)."""
     ranked, unavailable = [], []
     for r in results:
         if "error" in r:
             unavailable.append({k: r.get(k) for k in ("name", "names", "country", "continent", "experimental")} | {"reason": r["error"]})
             continue
         reason = exclusion(r)
-        if reason:
-            unavailable.append(r | {"reason": reason})
-        else:
-            ranked.append(r)
+        ranked.append(r | {"warning": reason} if reason else r)
     ranked.sort(key=lambda r: r["built_change_pts"], reverse=True)
     return ranked, unavailable
 
@@ -140,6 +140,33 @@ def retry_with_dates(city, first, before, after, args, cache):
     return best
 
 
+def retry_any_season(city, first, before, after, args, cache):
+    """Last resort: clear same-season pairs from any time of year, one year of slack on each side."""
+    key = f"{city['name']}|{city['country']}|{city['lat']}|{city['lon']}|{before}|{after}|anyseason"
+    if key in cache:
+        return cache[key]
+    attempts = [first]
+    try:
+        candidates = datepick.any_season_pairs(args.api, city["lat"], city["lon"],
+                                               [int(before), int(before) + 1], [int(after) - 1, int(after)])
+    except Exception:  # the dates endpoint failing should not stop the run
+        candidates = []
+    for b, a in candidates:
+        body = fetch_compare(city, b, a, args.api, args.retries, args.sleep)
+        time.sleep(args.sleep)
+        if "error" in body or not datepick.kept_dates(body, b, a):
+            continue
+        row = summarize(city, body) | {"dates_picked": True, "off_season": True}
+        attempts.append(row)
+        if not exclusion(row):
+            break
+    usable = [r for r in attempts if "error" not in r]
+    best = min(usable, key=lambda r: (exclusion(r) is not None, max(r["unusable_share"]), r["season_gap_days"])) if usable else first
+    cache[key] = best
+    CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
+    return best
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", help="comma-separated city names")
@@ -178,6 +205,8 @@ def main():
         entry = cache[key]
         if "error" in entry or exclusion(entry):
             entry = retry_with_dates(city, entry, before, after, args, cache)
+        if "error" in entry or exclusion(entry):
+            entry = retry_any_season(city, entry, before, after, args, cache)
         if "error" in entry:
             entry = {"name": city["name"], "country": city["country"], "continent": city.get("continent", ""),
                      "experimental": city.get("experimental") == "1", "error": entry["error"]}

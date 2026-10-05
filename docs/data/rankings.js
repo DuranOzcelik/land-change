@@ -36,6 +36,81 @@
    }
   },
   {
+   "name": "Shanghai",
+   "country": "CN",
+   "continent": "asia",
+   "lat": 31.23234,
+   "lon": 121.4691,
+   "experimental": true,
+   "before_date": "2017-12-25",
+   "after_date": "2025-12-18",
+   "built_before": 61.2,
+   "built_after": 77.0,
+   "built_change_pts": 15.8,
+   "built_km2": 32.36,
+   "unusable_share": [
+    4.6,
+    0.4
+   ],
+   "season_gap_days": 7,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "Şanghay",
+    "en": "Shanghai"
+   }
+  },
+  {
+   "name": "Delhi",
+   "country": "IN",
+   "continent": "asia",
+   "lat": 28.66645,
+   "lon": 77.21698,
+   "experimental": true,
+   "before_date": "2017-10-02",
+   "after_date": "2026-10-02",
+   "built_before": 58.5,
+   "built_after": 66.6,
+   "built_change_pts": 8.1,
+   "built_km2": 9.42,
+   "unusable_share": [
+    0.3,
+    0.0
+   ],
+   "season_gap_days": 0,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "Delhi",
+    "en": "Delhi"
+   }
+  },
+  {
+   "name": "Mexico City",
+   "country": "MX",
+   "continent": "north_america",
+   "lat": 19.43263,
+   "lon": -99.13318,
+   "experimental": true,
+   "before_date": "2016-04-02",
+   "after_date": "2025-04-05",
+   "built_before": 83.5,
+   "built_after": 91.4,
+   "built_change_pts": 7.9,
+   "built_km2": 5.32,
+   "unusable_share": [
+    0.0,
+    0.0
+   ],
+   "season_gap_days": 2,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "Meksiko",
+    "en": "Mexico City"
+   }
+  },
+  {
    "name": "Nairobi",
    "country": "KE",
    "continent": "africa",
@@ -82,6 +157,31 @@
    }
   },
   {
+   "name": "Lagos",
+   "country": "NG",
+   "continent": "africa",
+   "lat": 6.45506,
+   "lon": 3.39418,
+   "experimental": true,
+   "before_date": "2016-01-07",
+   "after_date": "2026-01-24",
+   "built_before": 5.9,
+   "built_after": 10.6,
+   "built_change_pts": 4.7,
+   "built_km2": 9.01,
+   "unusable_share": [
+    1.5,
+    4.2
+   ],
+   "season_gap_days": 17,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "Lagos",
+    "en": "Lagos"
+   }
+  },
+  {
    "name": "Los Angeles",
    "country": "US",
    "continent": "north_america",
@@ -102,6 +202,31 @@
    "names": {
     "tr": "Los Angeles",
     "en": "Los Angeles"
+   }
+  },
+  {
+   "name": "Melbourne",
+   "country": "AU",
+   "continent": "oceania",
+   "lat": -37.81425,
+   "lon": 144.96317,
+   "experimental": true,
+   "before_date": "2016-04-26",
+   "after_date": "2026-04-04",
+   "built_before": 67.7,
+   "built_after": 71.6,
+   "built_change_pts": 3.9,
+   "built_km2": 2.05,
+   "unusable_share": [
+    1.0,
+    0.0
+   ],
+   "season_gap_days": 23,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "Melbourne",
+    "en": "Melbourne"
    }
   },
   {
@@ -174,6 +299,31 @@
    }
   },
   {
+   "name": "New York",
+   "country": "US",
+   "continent": "north_america",
+   "lat": 40.71273,
+   "lon": -74.00602,
+   "experimental": true,
+   "before_date": "2016-10-15",
+   "after_date": "2025-10-16",
+   "built_before": 56.6,
+   "built_after": 58.0,
+   "built_change_pts": 1.4,
+   "built_km2": 2.87,
+   "unusable_share": [
+    2.3,
+    0.0
+   ],
+   "season_gap_days": 0,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "New York",
+    "en": "New York"
+   }
+  },
+  {
    "name": "Dubai",
    "country": "AE",
    "continent": "asia",
@@ -195,6 +345,31 @@
    "names": {
     "tr": "Dubai",
     "en": "Dubai"
+   }
+  },
+  {
+   "name": "São Paulo",
+   "country": "BR",
+   "continent": "south_america",
+   "lat": -23.55065,
+   "lon": -46.63338,
+   "experimental": true,
+   "before_date": "2016-04-07",
+   "after_date": "2026-04-17",
+   "built_before": 90.8,
+   "built_after": 91.1,
+   "built_change_pts": 0.3,
+   "built_km2": 1.64,
+   "unusable_share": [
+    1.1,
+    0.0
+   ],
+   "season_gap_days": 9,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "São Paulo",
+    "en": "São Paulo"
    }
   },
   {
@@ -221,6 +396,32 @@
    }
   },
   {
+   "name": "Singapore",
+   "country": "SG",
+   "continent": "asia",
+   "lat": 1.28992,
+   "lon": 103.85191,
+   "experimental": true,
+   "before_date": "2017-11-22",
+   "after_date": "2025-12-05",
+   "built_before": 41.3,
+   "built_after": 40.8,
+   "built_change_pts": -0.5,
+   "built_km2": 6.55,
+   "unusable_share": [
+    10.2,
+    3.5
+   ],
+   "season_gap_days": 13,
+   "dates_picked": true,
+   "off_season": true,
+   "names": {
+    "tr": "Singapur",
+    "en": "Singapore"
+   },
+   "warning": "unusable"
+  },
+  {
    "name": "Madrid",
    "country": "ES",
    "continent": "europe",
@@ -242,174 +443,6 @@
     "tr": "Madrid",
     "en": "Madrid"
    }
-  }
- ],
- "unavailable": [
-  {
-   "name": "Tokyo",
-   "country": "JP",
-   "continent": "asia",
-   "lat": 35.67686,
-   "lon": 139.76389,
-   "experimental": true,
-   "before_date": "2016-06-02",
-   "after_date": "2026-07-25",
-   "built_before": 81.1,
-   "built_after": 80.9,
-   "built_change_pts": -0.2,
-   "built_km2": 3.28,
-   "unusable_share": [
-    0.4,
-    1.3
-   ],
-   "season_gap_days": 52,
-   "names": {
-    "tr": "Tokyo",
-    "en": "Tokyo"
-   },
-   "reason": "season"
-  },
-  {
-   "name": "Delhi",
-   "country": "IN",
-   "continent": "asia",
-   "lat": 28.66645,
-   "lon": 77.21698,
-   "experimental": true,
-   "before_date": "2016-08-03",
-   "after_date": "2026-07-12",
-   "built_before": 66.8,
-   "built_after": 62.3,
-   "built_change_pts": -4.5,
-   "built_km2": 15.56,
-   "unusable_share": [
-    20.4,
-    0.0
-   ],
-   "season_gap_days": 23,
-   "names": {
-    "tr": "Delhi",
-    "en": "Delhi"
-   },
-   "reason": "unusable"
-  },
-  {
-   "name": "Shanghai",
-   "country": "CN",
-   "continent": "asia",
-   "lat": 31.23234,
-   "lon": 121.4691,
-   "experimental": true,
-   "before_date": "2016-07-23",
-   "after_date": "2026-08-02",
-   "built_before": 90.0,
-   "built_after": 90.9,
-   "built_change_pts": 0.9,
-   "built_km2": 9.83,
-   "unusable_share": [
-    8.9,
-    1.4
-   ],
-   "season_gap_days": 9,
-   "names": {
-    "tr": "Şanghay",
-    "en": "Shanghai"
-   },
-   "reason": "unusable"
-  },
-  {
-   "name": "Singapore",
-   "country": "SG",
-   "continent": "asia",
-   "lat": 1.28992,
-   "lon": 103.85191,
-   "experimental": true,
-   "before_date": "2016-09-03",
-   "after_date": "2026-08-22",
-   "built_before": 44.0,
-   "built_after": 43.3,
-   "built_change_pts": -0.7,
-   "built_km2": 8.19,
-   "unusable_share": [
-    12.3,
-    2.1
-   ],
-   "season_gap_days": 13,
-   "names": {
-    "tr": "Singapur",
-    "en": "Singapore"
-   },
-   "reason": "unusable"
-  },
-  {
-   "name": "Lagos",
-   "names": {
-    "tr": "Lagos",
-    "en": "Lagos"
-   },
-   "country": "NG",
-   "continent": "africa",
-   "experimental": true,
-   "reason": "no_imagery"
-  },
-  {
-   "name": "New York",
-   "country": "US",
-   "continent": "north_america",
-   "lat": 40.71273,
-   "lon": -74.00602,
-   "experimental": true,
-   "before_date": "2016-07-20",
-   "after_date": "2026-07-23",
-   "built_before": 62.7,
-   "built_after": 65.5,
-   "built_change_pts": 2.8,
-   "built_km2": 4.1,
-   "unusable_share": [
-    8.1,
-    0.0
-   ],
-   "season_gap_days": 2,
-   "names": {
-    "tr": "New York",
-    "en": "New York"
-   },
-   "reason": "unusable"
-  },
-  {
-   "name": "Mexico City",
-   "names": {
-    "tr": "Meksiko",
-    "en": "Mexico City"
-   },
-   "country": "MX",
-   "continent": "north_america",
-   "experimental": true,
-   "reason": "no_imagery"
-  },
-  {
-   "name": "São Paulo",
-   "country": "BR",
-   "continent": "south_america",
-   "lat": -23.55065,
-   "lon": -46.63338,
-   "experimental": true,
-   "before_date": "2016-01-08",
-   "after_date": "2026-01-10",
-   "built_before": 91.4,
-   "built_after": 97.9,
-   "built_change_pts": 6.5,
-   "built_km2": 13.93,
-   "unusable_share": [
-    13.1,
-    0.0
-   ],
-   "season_gap_days": 2,
-   "names": {
-    "tr": "São Paulo",
-    "en": "São Paulo"
-   },
-   "reason": "unusable"
   },
   {
    "name": "Sydney",
@@ -418,48 +451,49 @@
    "lat": -33.86984,
    "lon": 151.20828,
    "experimental": true,
-   "before_date": "2015-12-18",
-   "after_date": "2026-01-28",
-   "built_before": 61.3,
-   "built_after": 55.5,
-   "built_change_pts": -5.8,
-   "built_km2": 0.0,
+   "before_date": "2016-05-06",
+   "after_date": "2026-05-08",
+   "built_before": 47.7,
+   "built_after": 43.5,
+   "built_change_pts": -4.2,
+   "built_km2": 2.05,
    "unusable_share": [
-    6.2,
+    1.5,
     0.0
    ],
-   "season_gap_days": 41,
+   "season_gap_days": 1,
    "dates_picked": true,
+   "off_season": true,
    "names": {
     "tr": "Sidney",
     "en": "Sydney"
-   },
-   "reason": "unusable"
+   }
   },
   {
-   "name": "Melbourne",
-   "country": "AU",
-   "continent": "oceania",
-   "lat": -37.81425,
-   "lon": 144.96317,
+   "name": "Tokyo",
+   "country": "JP",
+   "continent": "asia",
+   "lat": 35.67686,
+   "lon": 139.76389,
    "experimental": true,
-   "before_date": "2015-11-18",
-   "after_date": "2026-01-24",
-   "built_before": 76.0,
-   "built_after": 76.8,
-   "built_change_pts": 0.8,
-   "built_km2": 1.23,
+   "before_date": "2016-10-20",
+   "after_date": "2025-11-22",
+   "built_before": 67.8,
+   "built_after": 58.5,
+   "built_change_pts": -9.3,
+   "built_km2": 1.64,
    "unusable_share": [
-    0.3,
-    0.0
+    3.3,
+    0.1
    ],
-   "season_gap_days": 67,
+   "season_gap_days": 32,
    "dates_picked": true,
+   "off_season": true,
    "names": {
-    "tr": "Melbourne",
-    "en": "Melbourne"
-   },
-   "reason": "season"
+    "tr": "Tokyo",
+    "en": "Tokyo"
+   }
   }
- ]
+ ],
+ "unavailable": []
 };

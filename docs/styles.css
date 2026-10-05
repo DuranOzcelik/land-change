@@ -393,6 +393,8 @@ table.rankings tbody tr:hover { background: var(--wash); }
 }
 /* Examples: Turkey on its own row, then the continents two by two (three cards each). */
 .story-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
+.tag.warn { background: var(--wash); color: var(--danger); }
+table.rankings td .tag { margin: 2px 4px 0 0; }
 .story-group { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .story-group.wide { grid-column: 1 / -1; }
 .story-group .stories { grid-template-columns: repeat(3, minmax(0, 1fr)); }

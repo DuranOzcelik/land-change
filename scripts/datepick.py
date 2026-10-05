@@ -63,6 +63,45 @@ def kept_window(body, before_anchor, after_anchor):
             and days_apart(body["after"]["date"], after_anchor) <= MAX_SEASON_GAP)
 
 
+def any_season_pairs(api, lat, lon, before_years, after_years, limit=5):
+    """Up to `limit` (before, after) pairs from any time of year, clearest first.
+
+    The last resort for places whose summers are cloudy (monsoon, wet season) or missing. The two
+    images must still lie in the same season of their years (MAX_SEASON_GAP), so the comparison
+    stays fair; only the season itself may differ from mid-summer. Dates are kept only when their
+    calendar year is one of the given years.
+    """
+    def dates(years):
+        keep = {str(y) for y in years}
+        seen, out = set(), []
+        for y in years:
+            for d in available(api, lat, lon, y):
+                if d["date"][:4] in keep and d["date"] not in seen:
+                    seen.add(d["date"])
+                    out.append(d)
+        return out
+
+    before, after = dates(before_years), dates(after_years)
+    candidates = sorted(
+        ((max(b["cloud"], a["cloud"]), season_gap(b["date"], a["date"]), b["date"], a["date"])
+         for b in before for a in after if season_gap(b["date"], a["date"]) <= MAX_SEASON_GAP))
+    out, used = [], set()
+    for _, _, b, a in candidates:
+        if b in used or a in used:   # spread the tries over different images
+            continue
+        used.update((b, a))
+        out.append((b, a))
+        if len(out) == limit:
+            break
+    return out
+
+
+def kept_dates(body, before, after, tolerance=10):
+    """The API answers a day with the nearest usable image; accept it only close to the day asked."""
+    return (days_apart(body["before"]["date"], before) <= tolerance
+            and days_apart(body["after"]["date"], after) <= tolerance)
+
+
 def pairs(api, lat, lon, before_anchor, after_anchor, limit=3):
     """Up to `limit` (before, after) date pairs near the two anchors, clearest first."""
     after = near(api, lat, lon, after_anchor)
