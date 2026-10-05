@@ -212,7 +212,11 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 .date-list .empty.error { color: var(--danger); }
 .fields[hidden] { display: none; }
 .row { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; }
+.status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.status-row[hidden] { display: none; }
 .status { margin: 0; font-size: 14px; color: var(--muted); }
+.pill-button.small { padding: 6px 16px; font-size: 14px; flex: none; }
+.pill-button[hidden] { display: none; }
 .status.error { color: var(--danger); }
 
 /* ---------- results ---------- */

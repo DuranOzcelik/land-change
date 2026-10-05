@@ -44,6 +44,7 @@
     $("run").textContent = t(state.mode === "now" ? "runNow" : "runChange");
     $("theme").textContent = `${t("theme")}: ${t(state.theme)}`;
     $("split-handle").setAttribute("aria-label", t("slider"));
+    if (stageKey) setStage(stageKey);
     showPlaceLine();
     if (state.data) renderResults();
   }
@@ -470,11 +471,21 @@
   });
   document.addEventListener("click", (e) => { if (!e.target.closest(".field")) closeDates(); });
 
+  let runAbort = null;    // aborts the running analysis request
+  let stageKey = null;    // translation key of the loading stage on screen, so a language switch can redraw it
+
   function setStatus(message, isError = false) {
     const el = $("status");
     el.hidden = !message;
     el.textContent = message;
     el.classList.toggle("error", isError);
+    stageKey = null;
+    $("status-row").hidden = el.hidden && $("cancel").hidden;
+  }
+
+  function setStage(key) {
+    setStatus(t(key));
+    stageKey = key;
   }
 
   const validDate = (v) => /^\d{4}(-\d{2}-\d{2})?$/.test(v);
@@ -500,12 +511,16 @@
       path = "/api/compare";
     }
 
-    const button = $("run");
+    // The server reports no progress, so the stages follow typical timings and are worded as estimates.
+    const button = $("run"), cancel = $("cancel");
     button.disabled = true;
-    setStatus(t("loading"));
-    const wake = setTimeout(() => setStatus(t("waking")), 12000);
+    cancel.hidden = false;
+    runAbort = new AbortController();
+    setStage("stageSearch");
+    const timers = [[3000, "stageDownload"], [8000, "stageClassify"], [12000, "waking"]]
+      .map(([ms, key]) => setTimeout(() => setStage(key), ms));
     try {
-      const res = await fetch(`${API}${path}?${params}`);
+      const res = await fetch(`${API}${path}?${params}`, { signal: runAbort.signal });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || "");
@@ -519,12 +534,20 @@
       renderResults();
       updateLink(params);
     } catch (err) {
-      setStatus(err instanceof TypeError ? t("errNetwork") : err.message, true);
+      if (err.name === "AbortError") setStatus(t("cancelled"));
+      else setStatus(err instanceof TypeError ? t("errNetwork") : err.message, true);
     } finally {
-      clearTimeout(wake);
+      timers.forEach(clearTimeout);
+      runAbort = null;
+      cancel.hidden = true;
+      $("status-row").hidden = $("status").hidden;
       button.disabled = false;
+      // The cancel button disappears, so hand focus back to the run button.
+      if (document.activeElement === cancel || document.activeElement === document.body) button.focus();
     }
   });
+
+  $("cancel").addEventListener("click", () => { if (runAbort) runAbort.abort(); });
 
   /* ------------------------------------------------------------------ drawing the cell grid */
 
