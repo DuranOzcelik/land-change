@@ -241,6 +241,12 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
   display: flex; flex-direction: column; gap: 18px;
 }
 .results[hidden] { display: none; }
+.sheet-head, .sheet-body { display: flex; flex-direction: column; gap: 18px; }
+.grabber {
+  display: none; width: 100%; height: 36px; align-items: center; justify-content: center;
+  border: 0; background: none; cursor: pointer; flex: none;
+}
+.grabber i { width: 40px; height: 4px; border-radius: var(--r-pill); background: var(--muted); }
 .results h2 { margin: 0; color: var(--ink); font-size: 22px; line-height: 1.2; letter-spacing: -0.015em; }
 .results .meta { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
 
@@ -296,8 +302,13 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 
 /* ---------- small screens: the globe stays on top, panels become a sheet ---------- */
 @media (max-width: 860px) {
-  body { overflow: auto; }
-  .map-wrap { position: sticky; top: 0; height: 46vh; inset: auto; }
+  /* The document scrolls (not a 100%-high body), so the sticky map stays in view. */
+  html, body { height: auto; }
+  body { overflow: visible; padding-bottom: var(--sheet-peek, 0px); }
+  /* The map sits above the scrolling form so the globe always keeps its share of the screen. */
+  .map-wrap { position: sticky; inset: auto; top: 0; height: 46vh; z-index: 3; }
+  .topbar { z-index: 5; }
+  .stage { z-index: auto; }   /* no stacking context, so the fixed sheet can rise above the map */
   .segmented.small button { padding: 6px 8px; }
   .legend { left: 8px; bottom: 8px; max-width: calc(100% - 16px); }
   .topbar { padding: 12px 16px; }
@@ -307,5 +318,20 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
   .left, .results { width: 100%; max-height: none; }
   .hero h1 { font-size: clamp(40px, 12vw, 56px); }
   .credit { position: static; max-width: none; margin: 0 16px 16px; display: inline-block; border-radius: 12px; }
+
+  /* Results become a bottom sheet: closed shows the head, open stops at 60% so the globe keeps 40%. */
+  .results {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
+    max-height: 60vh; max-height: 60dvh; padding: 0; gap: 0; overflow: hidden;
+    border-radius: var(--r-card) var(--r-card) 0 0;
+    transform: translateY(calc(100% - var(--sheet-peek, 0px)));
+    transition: transform 0.25s ease;
+  }
+  .results.open { transform: none; }
+  .results.dragging { transition: none; }
+  .grabber { display: flex; }
+  .sheet-head { gap: 8px; padding: 0 16px 14px; touch-action: none; cursor: grab; }
+  .sheet-head .figure strong { font-size: 44px; }
+  .sheet-body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 4px 16px 24px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

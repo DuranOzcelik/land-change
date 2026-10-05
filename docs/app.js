@@ -42,6 +42,7 @@
   const t = (key) => (LANGS[state.lang] && LANGS[state.lang][key]) ?? LANGS.en[key] ?? key;
   const num = (value, digits = 1) =>
     new Intl.NumberFormat(state.lang, { maximumFractionDigits: digits }).format(value);
+  const pct = (value) => (state.lang === "tr" ? `%${num(value)}` : `${num(value)}%`);
 
   function applyLanguage() {
     document.documentElement.lang = state.lang;
@@ -524,6 +525,7 @@
     cancel.hidden = false;
     runAbort = new AbortController();
     setStage("stageSearch");
+    let cancelled = false;
     const timers = [[3000, "stageDownload"], [8000, "stageClassify"], [12000, "waking"]]
       .map(([ms, key]) => setTimeout(() => setStage(key), ms));
     try {
@@ -535,13 +537,15 @@
       }
       state.data = { mode: state.mode, body: await res.json(), label: state.place.label };
       state.layer = "split";
+      sheetOpen = false;
       setStatus("");
       $("results").hidden = false;
       centreSplit();
       renderResults();
       updateLink(params);
     } catch (err) {
-      if (err.name === "AbortError") setStatus(t("cancelled"));
+      cancelled = err.name === "AbortError";
+      if (cancelled) setStatus(t("cancelled"));
       else setStatus(err instanceof TypeError ? t("errNetwork") : err.message, true);
     } finally {
       timers.forEach(clearTimeout);
@@ -550,7 +554,7 @@
       $("status-row").hidden = $("status").hidden;
       button.disabled = false;
       // The cancel button disappears, so hand focus back to the run button.
-      if (document.activeElement === cancel || document.activeElement === document.body) button.focus();
+      if (cancelled) button.focus();
     }
   });
 
@@ -673,16 +677,27 @@
     </div>
     <p class="limits">${esc(t("limits"))}</p>`;
 
+  // On phones the panel is a bottom sheet: the head (title and main figure) stays in view.
+  const sheetHead = (figure) => `
+    <div class="sheet-head" id="sheet-head">
+      <button type="button" class="grabber" id="sheet-toggle" aria-controls="sheet-body"><i></i></button>
+      <h2>${esc(state.data.label)}</h2>
+      ${figure}
+    </div>`;
+
   function renderNow(body) {
+    const built = body.stats.groups.find((g) => g.key === "built");
     return `
-      <div><h2>${esc(state.data.label)}</h2>
-        <p class="meta">${esc(t("imageDate"))}: ${esc(body.date)} &nbsp; ${esc(t("totalArea"))}: ${num(body.stats.total_km2, 0)} km²</p></div>
+      ${sheetHead(built ? `<p class="figure"><strong>${pct(built.share)}</strong><span>${esc(t("builtShare"))}</span></p>` : "")}
+      <div class="sheet-body" id="sheet-body">
+      <p class="meta">${esc(t("imageDate"))}: ${esc(body.date)} &nbsp; ${esc(t("totalArea"))}: ${num(body.stats.total_km2, 0)} km²</p>
       ${notices(body)}
       ${bars(body.stats.groups)}
       ${classTable(body.stats.classes)}
       ${colorControl(body)}
       ${opacityControl()}
-      ${footer()}`;
+      ${footer()}
+      </div>`;
   }
 
   function renderChange(body) {
@@ -703,10 +718,10 @@
       `<button type="button" data-layer="${key}" aria-selected="${state.layer === key}">${esc(t("layer" + key[0].toUpperCase() + key.slice(1)))}</button>`;
 
     return `
-      <div><h2>${esc(state.data.label)}</h2>
-        <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${esc(t("totalArea"))}: ${num(a.stats.total_km2, 0)} km²</p></div>
-      <p class="figure"><strong>${num(body.built_km2)} km²</strong><span>${esc(t("builtGain"))}</span></p>
-      <p class="meta">${esc(t("changedTotal"))}: ${num(body.changed_km2)} km²</p>
+      ${sheetHead(`<p class="figure"><strong>${num(body.built_km2)} km²</strong><span>${esc(t("builtGain"))}</span></p>`)}
+      <div class="sheet-body" id="sheet-body">
+      <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${esc(t("totalArea"))}: ${num(a.stats.total_km2, 0)} km²<br>
+        ${esc(t("changedTotal"))}: ${num(body.changed_km2)} km²</p>
       ${notices(a, b)}
       <div><p class="subhead">${esc(t("layer"))}</p>
         <div class="segmented small" id="layer">${["split", "before", "after", "change"].map(layerButton).join("")}</div>
@@ -721,7 +736,8 @@
         <tbody>${rows}</tbody></table>
       <div><p class="subhead">${esc(t("transitions"))}</p>
         ${moves ? `<ul class="transitions">${moves}</ul>` : `<p class="meta">${esc(t("noChange"))}</p>`}</div>
-      ${footer()}`;
+      ${footer()}
+      </div>`;
   }
 
   // Entries the current layer does not draw are dimmed rather than removed.
@@ -770,7 +786,7 @@
       document.querySelectorAll("#color button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
       showOnMap();
     });
-    $("again").addEventListener("click", () => { searchInput.value = ""; searchInput.focus(); });
+    $("again").addEventListener("click", () => { setSheet(false); searchInput.value = ""; searchInput.focus(); });
     $("copy").addEventListener("click", async (e) => {
       try { await navigator.clipboard.writeText(location.href); e.target.textContent = t("copied"); } catch { /* clipboard blocked */ }
     });
@@ -785,7 +801,74 @@
         showOnMap();
       });
     }
+    applySheet();
   }
+
+  /* ------------------------------------------------------------------ phone bottom sheet */
+
+  const sheet = $("results");
+  let sheetOpen = false;
+
+  // Below 860px the panel is a sheet; the closed body is inert so Tab skips what is off screen.
+  function applySheet() {
+    const head = $("sheet-head"), body = $("sheet-body"), toggle = $("sheet-toggle");
+    if (!head) return;
+    const phone = !wide();
+    sheet.classList.toggle("open", sheetOpen);
+    body.inert = phone && !sheetOpen;
+    toggle.setAttribute("aria-expanded", String(sheetOpen));
+    toggle.setAttribute("aria-label", t(sheetOpen ? "sheetClose" : "sheetOpen"));
+    const peek = phone && !sheet.hidden ? head.offsetHeight : 0;
+    document.documentElement.style.setProperty("--sheet-peek", `${peek}px`);
+  }
+
+  function setSheet(open) {
+    sheetOpen = open;
+    applySheet();
+  }
+
+  let drag = null;
+  let dragged = false;
+  sheet.addEventListener("pointerdown", (e) => {
+    dragged = false;
+    if (wide() || !e.target.closest(".sheet-head")) return;
+    const closed = sheet.offsetHeight - $("sheet-head").offsetHeight;
+    drag = { id: e.pointerId, y: e.clientY, from: sheetOpen ? 0 : closed, closed, offset: 0 };
+  });
+  sheet.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dy = e.clientY - drag.y;
+    if (!dragged && Math.abs(dy) < 6) return;
+    if (!dragged) {
+      dragged = true;
+      sheet.setPointerCapture(e.pointerId);
+      sheet.classList.add("dragging");
+    }
+    drag.offset = Math.min(drag.closed, Math.max(0, drag.from + dy));
+    sheet.style.transform = `translateY(${drag.offset}px)`;
+  });
+  const endDrag = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    sheet.classList.remove("dragging");
+    sheet.style.transform = "";
+    if (dragged) setSheet(d.offset < d.closed / 2);
+    // A tap on the head toggles; taps on the grabber button arrive as its click instead.
+    else if (e.type === "pointerup" && !e.target.closest("#sheet-toggle")) setSheet(!sheetOpen);
+  };
+  sheet.addEventListener("pointerup", endDrag);
+  sheet.addEventListener("pointercancel", endDrag);
+  sheet.addEventListener("click", (e) => {
+    if (e.target.closest("#sheet-toggle") && !dragged) setSheet(!sheetOpen);
+  });
+  sheet.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && sheetOpen && !wide()) {
+      setSheet(false);
+      $("sheet-toggle").focus();
+    }
+  });
+  addEventListener("resize", applySheet);
 
   /* ------------------------------------------------------------------ shareable link */
 
