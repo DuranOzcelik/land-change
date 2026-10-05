@@ -1306,7 +1306,7 @@
   // Rankings, stories and the "how it works" page share one modal dialog.
   const dialog = $("dialog");
   let view = null;
-  const VIEWS = { rankings: renderRankings, stories: renderStories };
+  const VIEWS = { rankings: renderRankings, stories: renderStories, about: renderAbout };
   const jsonCache = new Map();
 
   async function loadJson(url) {
@@ -1492,6 +1492,33 @@
     const b = view === "stories" && e.target.closest("[data-story]");
     if (b) openStory(b.dataset.story).catch(() => setStatus(t("errData"), true));
   });
+
+  /* ------------------------------------------------------------------ how it works */
+
+  // Content follows PLAN.md (project, API contract, known limits) and /api/meta (classes, groups).
+  const GROUP_CLASSES = {
+    agriculture: ["AnnualCrop", "PermanentCrop", "Pasture"],
+    vegetation: ["Forest", "HerbaceousVegetation"],
+    built: ["Residential", "Industrial", "Highway"],
+    water: ["River", "SeaLake"],
+  };
+
+  async function renderAbout() {
+    const steps = ["Place", "Image", "Classify", "Compare"].map((k) => `
+      <li><strong>${esc(t(`step${k}`))}</strong><span>${esc(t(`step${k}Text`))}</span></li>`).join("");
+    const groups = GROUPS.map((g) => `<li><span class="name">${swatch(g)}${esc(t(g))}</span>
+      <span>${GROUP_CLASSES[g].map((c) => esc(t(c))).join(", ")}</span></li>`).join("");
+    const decisions = ["Groups", "Confidence", "Season", "Clouds"].map((k) => `
+      <div><p class="subhead">${esc(t(`decision${k}`))}</p><p>${esc(t(`decision${k}Text`))}</p>
+      ${k === "Groups" ? `<ul class="group-list">${groups}</ul>` : ""}</div>`).join("");
+    const limits = ["Estimate", "Classes", "Europe", "Dates", "Window", "Season", "Basemap"]
+      .map((k) => `<li>${esc(t(`limit${k}`))}</li>`).join("");
+    return `
+      <p class="lead">${esc(t("aboutIntro"))}</p>
+      <div><p class="subhead">${esc(t("aboutFlow"))}</p><ol class="flow">${steps}</ol></div>
+      <div><p class="subhead">${esc(t("aboutDecisions"))}</p><div class="decisions">${decisions}</div></div>
+      <div><p class="subhead">${esc(t("aboutLimits"))}</p><ul class="limits-list">${limits}</ul></div>`;
+  }
 
   /* ------------------------------------------------------------------ shareable link */
 
