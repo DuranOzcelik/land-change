@@ -20,7 +20,7 @@ def compare(built_before=20.0, built_after=30.0, unusable=(0.0, 0.0), gap=3):
             "built_km2": 12.5, "season_gap_days": gap}
 
 
-CITY = {"name": "Testkent", "country": "TR", "lat": "39.9", "lon": "32.8", "experimental": "0"}
+CITY = {"name": "Testkent", "country": "TR", "continent": "europe", "lat": "39.9", "lon": "32.8", "experimental": "0"}
 
 
 class Summary(unittest.TestCase):
@@ -31,6 +31,7 @@ class Summary(unittest.TestCase):
         self.assertEqual(row["unusable_share"], [0.0, 0.0])
         self.assertEqual((row["before_date"], row["after_date"]), ("2016-07-24", "2025-07-20"))
         self.assertFalse(row["experimental"])
+        self.assertEqual(row["continent"], "europe")
 
     def test_rounding(self):
         self.assertEqual(br.summarize(CITY, compare(29.3, 28.3))["built_change_pts"], -1.0)
@@ -63,6 +64,39 @@ class LastSummer(unittest.TestCase):
     def test_rule(self):
         self.assertEqual(br.last_summer(dt.date(2026, 7, 31)), 2025)
         self.assertEqual(br.last_summer(dt.date(2026, 8, 1)), 2026)
+
+
+class DatePick(unittest.TestCase):
+    def fake(self, data):
+        import datepick
+        original = datepick.available
+        datepick.available = lambda api, lat, lon, year: [dict(d) for d in data.get(str(year), [])]
+        self.addCleanup(setattr, datepick, "available", original)
+        return datepick
+
+    def test_clear_dates_near_the_defaults(self):
+        dp = self.fake({
+            "2016": [{"date": "2016-05-15", "cloud": 0.0}, {"date": "2016-08-03", "cloud": 30.0}, {"date": "2016-08-20", "cloud": 4.0}],
+            "2026": [{"date": "2026-06-07", "cloud": 0.0}, {"date": "2026-07-12", "cloud": 1.0}],
+        })
+        # The clear May image is 80 days from the default 2016-08-03, so it is never used, and
+        # 2026-06-07 is 74 days from the only usable 2016 image, so it cannot pair with it.
+        self.assertEqual(dp.pairs("api", 0, 0, "2016-08-03", "2026-07-12"), [("2016-08-20", "2026-07-12")])
+
+    def test_southern_summer_may_start_the_year_before(self):
+        dp = self.fake({
+            "2015": [{"date": "2015-12-22", "cloud": 2.0}],
+            "2016": [{"date": "2016-01-15", "cloud": 9.0}, {"date": "2016-12-30", "cloud": 0.0}],
+            "2025": [{"date": "2025-01-20", "cloud": 0.0}],
+        })
+        anchor = dp.mid_summer("2016", -15)
+        self.assertEqual(anchor, "2016-01-20")
+        # 2016-12-30 is the clearest 2016 date but belongs to the next summer.
+        self.assertEqual(dp.pairs("api", -15, 0, anchor, dp.mid_summer("2025", -15)), [("2015-12-22", "2025-01-20")])
+
+    def test_gap_wraps_around_new_year(self):
+        import datepick
+        self.assertEqual(datepick.season_gap("2016-12-30", "2026-01-02"), 3)
 
 
 if __name__ == "__main__":

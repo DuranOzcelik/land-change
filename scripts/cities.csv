@@ -1,120 +1,21 @@
-name,country,lat,lon,experimental,geocoded_as,reviewed
-Adana,TR,36.98636,35.32529,0,"Adana, Adana, Türkiye",no
-Adıyaman,TR,37.7603,38.2773,0,"Adıyaman, Adıyaman, Türkiye",no
-Afyonkarahisar,TR,38.75686,30.5387,0,"Afyonkarahisar, Afyonkarahisar, Türkiye",no
-Ağrı,TR,39.71912,43.05049,0,"Ağrı, Ağrı, Türkiye",no
-Amasya,TR,40.65032,35.83291,0,"Amasya, Amasya, Türkiye",no
-Ankara,TR,39.92078,32.85405,0,"Ankara, Ankara, Türkiye",no
-Antalya,TR,36.88657,30.70302,0,"Antalya, Antalya, Türkiye",no
-Artvin,TR,41.18308,41.82874,0,"Artvin, Artvin, Türkiye",no
-Aydın,TR,37.84838,27.84359,0,"Aydın, Aydın, Türkiye",no
-Balıkesir,TR,39.64739,27.88798,0,"Balıkesir, Balıkesir, Türkiye",no
-Bilecik,TR,40.14351,29.97529,0,"Bilecik, Bilecik, Türkiye",no
-Bingöl,TR,38.88613,40.49723,0,"Bingöl, Bingöl, Türkiye",no
-Bitlis,TR,38.40205,42.10846,0,"Bitlis, Bitlis, Türkiye",no
-Bolu,TR,40.7333,31.61105,0,"Bolu, Bolu, Türkiye",no
-Burdur,TR,37.72484,30.28873,0,"Burdur, Burdur, Türkiye",no
-Bursa,TR,40.18257,29.0675,0,"Bursa, Bursa, Türkiye",no
-Çanakkale,TR,40.14627,26.40289,0,"Çanakkale, Çanakkale, Türkiye",no
-Çankırı,TR,40.59719,33.62127,0,"Çankırı, Çankırı, Türkiye",no
-Çorum,TR,40.54991,34.95373,0,"Çorum, Çorum, Türkiye",no
-Denizli,TR,37.78279,29.09665,0,"Denizli, Denizli, Türkiye",no
-Diyarbakır,TR,37.91622,40.23635,0,"Diyarbakır, Diyarbakır, Türkiye",no
-Edirne,TR,41.67593,26.55872,0,"Edirne, Edirne, Türkiye",no
-Elazığ,TR,38.67472,39.22271,0,"Elâzığ, Elazığ, Türkiye",no
-Erzincan,TR,39.74676,39.49103,0,"Erzincan, Erzincan, Türkiye",no
-Erzurum,TR,39.90632,41.27277,0,"Erzurum, Erzurum, Türkiye",no
-Eskişehir,TR,39.77439,30.51912,0,"Eskişehir, Eskişehir, Türkiye",no
-Gaziantep,TR,37.06283,37.37926,0,"Gaziantep, Gaziantep, Türkiye",no
-Giresun,TR,40.91763,38.38415,0,"Giresun, Giresun, Türkiye",no
-Gümüşhane,TR,40.46178,39.47573,0,"Gümüşhane, Gümüşhane, Türkiye",no
-Hakkari,TR,37.5767,43.73779,0,"Hakkâri, Hakkari, Türkiye",no
-Hatay,TR,36.20365,36.16376,0,"Antakya, Hatay, Türkiye",no
-Isparta,TR,37.76367,30.55506,0,"Isparta, Isparta, Türkiye",no
-Mersin,TR,36.79784,34.62984,0,"Mersin, Mersin, Türkiye",no
-İstanbul,TR,41.00638,28.97587,0,"İstanbul, İstanbul, Türkiye",no
-İzmir,TR,38.41925,27.12847,0,"İzmir, İzmir, Türkiye",no
-Kars,TR,40.60708,43.09475,0,"Kars, Kars, Türkiye",no
-Kastamonu,TR,41.37654,33.77701,0,"Kastamonu, Kastamonu, Türkiye",no
-Kayseri,TR,38.7219,35.48732,0,"Kayseri, Kayseri, Türkiye",no
-Kırklareli,TR,41.73702,27.22355,0,"Kırklareli, Kırklareli, Türkiye",no
-Kırşehir,TR,39.14611,34.16056,0,"Kırşehir, Kırşehir, Türkiye",no
-Kocaeli,TR,40.77211,29.95056,0,"İzmit, Kocaeli, Türkiye",no
-Konya,TR,37.87273,32.49244,0,"Konya, Konya, Türkiye",no
-Kütahya,TR,39.41991,29.98579,0,"Kütahya, Kütahya, Türkiye",no
-Malatya,TR,38.34868,38.31913,0,"Malatya, Malatya, Türkiye",no
-Manisa,TR,38.61258,27.4334,0,"Manisa, Manisa, Türkiye",no
-Kahramanmaraş,TR,37.58127,36.92751,0,"Kahramanmaraş, Kahramanmaraş, Türkiye",no
-Mardin,TR,37.31326,40.73544,0,"Mardin, Mardin, Türkiye",no
-Muğla,TR,37.21518,28.36373,0,"Muğla, Muğla, Türkiye",no
-Muş,TR,38.73222,41.48989,0,"Muş, Muş, Türkiye",no
-Nevşehir,TR,38.62504,34.71507,0,"Nevşehir, Nevşehir, Türkiye",no
-Niğde,TR,37.96985,34.67645,0,"Niğde, Niğde, Türkiye",no
-Ordu,TR,40.98523,37.87977,0,"Ordu, Ordu, Türkiye",no
-Rize,TR,41.02482,40.51991,0,"Rize, Rize, Türkiye",no
-Sakarya,TR,40.77552,30.40203,0,"Adapazarı, Sakarya, Türkiye",no
-Samsun,TR,41.29461,36.33206,0,"Samsun, Samsun, Türkiye",no
-Siirt,TR,37.92736,41.94218,0,"Siirt, Siirt, Türkiye",no
-Sinop,TR,42.02658,35.15115,0,"Sinop, Sinop, Türkiye",no
-Sivas,TR,39.75036,37.01452,0,"Sivas, Sivas, Türkiye",no
-Tekirdağ,TR,40.97812,27.51078,0,"Tekirdağ, Tekirdağ, Türkiye",no
-Tokat,TR,40.32335,36.55216,0,"Tokat, Tokat, Türkiye",no
-Trabzon,TR,41.00546,39.73015,0,"Trabzon, Trabzon, Türkiye",no
-Tunceli,TR,39.10606,39.54827,0,"Tunceli, Tunceli, Türkiye",no
-Şanlıurfa,TR,37.15962,38.79193,0,"Şanlıurfa, Şanlıurfa, Türkiye",no
-Uşak,TR,38.67404,29.40584,0,"Uşak, Uşak, Türkiye",no
-Van,TR,38.50088,43.39461,0,"Van, Van, Türkiye",no
-Yozgat,TR,39.8222,34.8081,0,"Yozgat, Yozgat, Türkiye",no
-Zonguldak,TR,41.45268,31.7876,0,"Zonguldak, Zonguldak, Türkiye",no
-Aksaray,TR,38.37054,34.02691,0,"Aksaray, Aksaray, Türkiye",no
-Bayburt,TR,40.25516,40.2205,0,"Bayburt, Bayburt, Türkiye",no
-Karaman,TR,37.18085,33.21946,0,"Karaman, Karaman, Türkiye",no
-Kırıkkale,TR,39.84105,33.50585,0,"Kırıkkale, Kırıkkale, Türkiye",no
-Batman,TR,37.88357,41.12776,0,"Batman, Batman, Türkiye",no
-Şırnak,TR,37.52196,42.45703,0,"Şırnak, Şırnak, Türkiye",no
-Bartın,TR,41.63505,32.33662,0,"Bartın, Bartın, Türkiye",no
-Ardahan,TR,41.1103,42.70356,0,"Ardahan, Ardahan, Türkiye",no
-Iğdır,TR,39.92188,44.0468,0,"Iğdır, Iğdır, Türkiye",no
-Yalova,TR,40.65825,29.26999,0,"Yalova, Yalova, Türkiye",no
-Karabük,TR,41.19554,32.62312,0,"Karabük, Karabük, Türkiye",no
-Kilis,TR,36.71656,37.11461,0,"Kilis, Kilis, Türkiye",no
-Osmaniye,TR,37.07336,36.25077,0,"Osmaniye, Osmaniye, Türkiye",no
-Düzce,TR,40.83915,31.15954,0,"Düzce, Düzce, Türkiye",no
-London,GB,51.50745,-0.12777,0,"London, England, United Kingdom",no
-Manchester,GB,53.47949,-2.24511,0,"Manchester, England, United Kingdom",no
-Birmingham,GB,52.4797,-1.90269,0,"Birmingham, England, United Kingdom",no
-Paris,FR,48.8535,2.34839,0,"Paris, Île-de-France, France",no
-Lyon,FR,45.75781,4.83201,0,"Lyon, Auvergne-Rhône-Alpes, France",no
-Marseille,FR,43.2964,5.37779,0,"Marseille, Provence-Alpes-Côte d'Azur, France",no
-Berlin,DE,52.51739,13.39513,0,"Berlin, Deutschland",no
-Hamburg,DE,53.55017,10.00132,0,"Hamburg, Deutschland",no
-Munich,DE,48.13711,11.57538,0,"München, Bayern, Deutschland",no
-Cologne,DE,50.93836,6.95997,0,"Köln, Nordrhein-Westfalen, Deutschland",no
-Madrid,ES,40.41678,-3.70351,0,"Madrid, Comunidad de Madrid, España",no
-Barcelona,ES,41.38258,2.17707,0,"Barcelona, Catalunya, España",no
-Valencia,ES,39.46971,-0.37634,0,"València, Comunitat Valenciana, España",no
-Rome,IT,41.89332,12.48293,0,"Roma, Lazio, Italia",no
-Milan,IT,45.46419,9.18963,0,"Milano, Lombardia, Italia",no
-Naples,IT,40.83588,14.24877,0,"Napoli, Campania, Italia",no
-Amsterdam,NL,52.37308,4.89245,0,"Amsterdam, Noord-Holland, Nederland",no
-Rotterdam,NL,51.92444,4.47775,0,"Rotterdam, Zuid-Holland, Nederland",no
-Brussels,BE,50.84674,4.35249,0,"Bruxelles - Brussel, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, België / Belgique / Belgien",no
-Vienna,AT,48.20835,16.3725,0,"Wien, Österreich",no
-Zurich,CH,47.37445,8.54104,0,"Zürich, Zürich, Schweiz/Suisse/Svizzera/Svizra",no
-Prague,CZ,50.08747,14.42125,0,"Praha, Česko",no
-Warsaw,PL,52.23196,21.00672,0,"Warszawa, województwo mazowieckie, Polska",no
-Kraków,PL,50.06195,19.93686,0,"Kraków, województwo małopolskie, Polska",no
-Budapest,HU,47.49788,19.04024,0,"Budapest, Közép-Magyarország, Magyarország",no
-Bucharest,RO,44.43614,26.10268,0,"București, România",no
-Sofia,BG,42.6977,23.32174,0,"София, София-град, Бългaрия",no
-Athens,GR,37.97556,23.73483,0,"Αθήνα, Αποκεντρωμένη Διοίκηση Αττικής, Ελλάς",no
-Thessaloniki,GR,40.64032,22.93527,0,"Θεσσαλονίκη, Αποκεντρωμένη Διοίκηση Μακεδονίας - Θράκης, Ελλάς",no
-Belgrade,RS,44.81781,20.4569,0,"Београд, Централна Србија, Србија",no
-Zagreb,HR,45.8131,15.97728,0,"Zagreb, Hrvatska",no
-Lisbon,PT,38.70775,-9.13659,0,"Lisboa, Portugal",no
-Porto,PT,41.15022,-8.61035,0,"Porto, Portugal",no
-Dublin,IE,53.34938,-6.26056,0,"Dublin, Éire / Ireland",no
-Copenhagen,DK,55.68672,12.57007,0,"København, Region Hovedstaden, Danmark",no
-Stockholm,SE,59.32512,18.07109,0,"Stockholm, Sverige",no
-Oslo,NO,59.91333,10.73897,0,"Oslo, Norge",no
-Helsinki,FI,60.16662,24.94354,0,"Helsinki, Uusimaa, Suomi",no
+name,name_tr,country,continent,lat,lon,experimental,geocoded_as,reviewed
+İstanbul,İstanbul,TR,europe,41.00638,28.97587,0,"İstanbul, İstanbul, Türkiye",no
+London,Londra,GB,europe,51.50745,-0.12777,0,"London, England, United Kingdom",no
+Paris,Paris,FR,europe,48.8535,2.34839,0,"Paris, Île-de-France, France",no
+Madrid,Madrid,ES,europe,40.41678,-3.70351,0,"Madrid, Comunidad de Madrid, España",no
+Rome,Roma,IT,europe,41.89332,12.48293,0,"Roma, Lazio, Italia",no
+Tokyo,Tokyo,JP,asia,35.67686,139.76389,1,"東京都, 日本",no
+Delhi,Delhi,IN,asia,28.66645,77.21698,1,"Delhi, Delhi, India",no
+Shanghai,Şanghay,CN,asia,31.23234,121.4691,1,"上海市, 上海市, 中国",no
+Dubai,Dubai,AE,asia,25.26472,55.29241,1,"دبي, إمارة دبي, الإمارات العربية المتحدة",no
+Singapore,Singapur,SG,asia,1.28992,103.85191,1,"Singapore, Singapore",no
+Cairo,Kahire,EG,africa,30.04439,31.23573,1,"القاهرة, القاهرة, مصر",no
+Lagos,Lagos,NG,africa,6.45506,3.39418,1,"Lagos, Lagos, Nigeria",no
+Nairobi,Nairobi,KE,africa,-1.289,36.81728,1,"Nairobi, Nairobi, Kenya",no
+New York,New York,US,north_america,40.71273,-74.00602,1,"New York, New York, United States",no
+Los Angeles,Los Angeles,US,north_america,34.05369,-118.24277,1,"Los Angeles, California, United States",no
+Mexico City,Meksiko,MX,north_america,19.43263,-99.13318,1,"Ciudad de México, Ciudad de México, México",no
+São Paulo,São Paulo,BR,south_america,-23.55065,-46.63338,1,"São Paulo, São Paulo, Brasil",no
+Buenos Aires,Buenos Aires,AR,south_america,-34.60956,-58.38879,1,"Buenos Aires, Ciudad Autónoma de Buenos Aires, Argentina",no
+Sydney,Sidney,AU,oceania,-33.86984,151.20828,1,"Sydney, New South Wales, Australia",no
+Melbourne,Melbourne,AU,oceania,-37.81425,144.96317,1,"Melbourne, Victoria, Australia",no

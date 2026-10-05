@@ -6,6 +6,8 @@ scripts/.rankings_cache.json, so an interrupted run continues where it stopped.
 
 A city goes to the "unavailable" list instead of the table when either image has more than
 5% cloudy or missing area, or the two images are more than 45 days apart in the season.
+Before giving up on a city, up to three clearer date pairs from the same season of the same two
+years are tried (see datepick.py); the dates used are stored with each city.
 
 Usage:
   python scripts/build_rankings.py                       # reviewed rows only
@@ -24,6 +26,7 @@ import urllib.request
 from pathlib import Path
 
 import datajs
+import datepick
 
 ROOT = Path(__file__).resolve().parent.parent
 CITIES = ROOT / "scripts" / "cities.csv"
@@ -50,7 +53,7 @@ def summarize(city, body):
     before, after = body["before"], body["after"]
     b, a = built_share(before), built_share(after)
     return {
-        "name": city["name"], "country": city["country"],
+        "name": city["name"], "country": city["country"], "continent": city.get("continent", ""),
         "lat": float(city["lat"]), "lon": float(city["lon"]),
         "experimental": city.get("experimental") in ("1", 1, True, "yes"),
         "before_date": before["date"], "after_date": after["date"],
@@ -75,7 +78,7 @@ def split_results(results):
     ranked, unavailable = [], []
     for r in results:
         if "error" in r:
-            unavailable.append({k: r[k] for k in ("name", "country", "experimental")} | {"reason": r["error"]})
+            unavailable.append({k: r.get(k) for k in ("name", "names", "country", "continent", "experimental")} | {"reason": r["error"]})
             continue
         reason = exclusion(r)
         if reason:
@@ -107,6 +110,34 @@ def fetch_compare(city, before, after, api, retries, pause):
                 return {"error": "server"}
         time.sleep(pause * (attempt + 1))
     return {"error": "server"}
+
+
+def retry_with_dates(city, first, before, after, args, cache):
+    """Try clearer same-season date pairs; return the first that passes, else the best attempt."""
+    key = f"{city['name']}|{city['country']}|{city['lat']}|{city['lon']}|{before}|{after}|picked"
+    if key in cache:
+        return cache[key]
+    attempts = [first]
+    try:
+        anchors = (first.get("before_date") or datepick.mid_summer(before, city["lat"]),
+                   first.get("after_date") or datepick.mid_summer(after, city["lat"]))
+        candidates = datepick.pairs(args.api, city["lat"], city["lon"], *anchors)
+    except Exception:  # the dates endpoint failing should not stop the run
+        candidates = []
+    for b, a in candidates:
+        body = fetch_compare(city, b, a, args.api, args.retries, args.sleep)
+        time.sleep(args.sleep)
+        if "error" in body or not datepick.kept_window(body, *anchors):
+            continue
+        row = summarize(city, body) | {"dates_picked": True}
+        attempts.append(row)
+        if not exclusion(row):
+            break
+    usable = [r for r in attempts if "error" not in r]
+    best = min(usable, key=lambda r: (exclusion(r) is not None, max(r["unusable_share"]))) if usable else first
+    cache[key] = best
+    CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
+    return best
 
 
 def main():
@@ -145,19 +176,25 @@ def main():
             CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
             time.sleep(args.sleep)
         entry = cache[key]
+        if "error" in entry or exclusion(entry):
+            entry = retry_with_dates(city, entry, before, after, args, cache)
         if "error" in entry:
-            entry = {"name": city["name"], "country": city["country"],
+            entry = {"name": city["name"], "country": city["country"], "continent": city.get("continent", ""),
                      "experimental": city.get("experimental") == "1", "error": entry["error"]}
         results.append(entry)
         print(f"[{i}/{len(cities)}] {city['name']}: {entry.get('error') or entry['built_change_pts']}", flush=True)
 
+    names = {c["name"]: {"tr": c.get("name_tr") or c["name"], "en": c["name"]} for c in cities}
+    for r in results:
+        r["names"] = names[r["name"]]
     ranked, unavailable = split_results(results)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     datajs.write(OUT, "rankings", {
         "generated": dt.date.today().isoformat(),
         "params": {"before": before, "after": after, "size_km": 20, "cell_m": 640,
                    "max_unusable": MAX_UNUSABLE, "max_season_gap_days": MAX_SEASON_GAP},
-        "complete": not args.only and not args.include_unreviewed,
+        "complete": not args.only,
+        "reviewed": all(c.get("reviewed") == "yes" for c in cities),
         "cities": ranked, "unavailable": unavailable,
     }, "Built by scripts/build_rankings.py. Do not edit by hand.")
     print(f"wrote {OUT}: {len(ranked)} ranked, {len(unavailable)} unavailable")

@@ -1601,14 +1601,16 @@
 
   /* ------------------------------------------------------------------ city rankings */
 
-  const rankView = { sort: "built_change_pts", dir: -1, country: "" };
+  const CONTINENTS = ["europe", "asia", "africa", "north_america", "south_america", "oceania"];
+  const continentName = (key) => t(`continent_${key}`);
+  const cityName = (c) => (c.names && c.names[state.lang]) || c.name;
+  const rankView = { sort: "built_change_pts", dir: -1, continent: "" };
 
   async function renderRankings() {
     const data = await loadData("rankings");
     const p = data.params;
     const all = [...data.cities, ...data.unavailable];
-    const countries = [...new Set(all.map((c) => c.country))]
-      .sort((a, b) => countryName(a).localeCompare(countryName(b), state.lang));
+    const continents = CONTINENTS.filter((k) => all.some((c) => c.continent === k));
     const reason = (c) => {
       if (c.reason === "unusable") return t("reasonUnusable").replace("{a}", pct(c.unusable_share[0])).replace("{b}", pct(c.unusable_share[1]));
       if (c.reason === "season") return t("reasonSeason").replace("{n}", num(c.season_gap_days, 0));
@@ -1620,23 +1622,30 @@
         .replace("{size}", p.size_km).replace("{cell}", p.cell_m)
         .replace("{unusable}", num(p.max_unusable)).replace("{gap}", p.max_season_gap_days))}
         ${esc(t("generatedOn").replace("{date}", data.generated))}</p>
-      ${data.complete ? "" : `<p class="notice">${esc(t("rankPartial").replace("{n}", all.length))}</p>`}
-      <label class="filter"><span>${esc(t("country"))}</span>
-        <select id="rank-country" class="pill-select">
-          <option value="">${esc(t("allCountries"))}</option>
-          ${countries.map((c) => `<option value="${esc(c)}"${c === rankView.country ? " selected" : ""}>${esc(countryName(c))}</option>`).join("")}
+      ${data.reviewed ? "" : `<p class="notice">${esc(t("rankUnreviewed"))}</p>`}
+      <label class="filter"><span>${esc(t("continent"))}</span>
+        <select id="rank-continent" class="pill-select">
+          <option value="">${esc(t("allContinents"))}</option>
+          ${continents.map((k) => `<option value="${k}"${k === rankView.continent ? " selected" : ""}>${esc(continentName(k))}</option>`).join("")}
         </select></label>
       <div id="ranking-table">${rankingTable(data)}</div>
       ${data.unavailable.length ? `<div><p class="subhead">${esc(t("rankUnavailable"))}</p>
         <ul class="unavailable">${data.unavailable.map((c) => `
-          <li><span>${esc(c.name)}, ${esc(countryName(c.country))}</span><span>${esc(reason(c))}</span></li>`).join("")}</ul></div>` : ""}`;
+          <li><span>${esc(cityName(c))}, ${esc(countryName(c.country))}</span><span>${esc(reason(c))}</span></li>`).join("")}</ul></div>` : ""}`;
   }
 
   function rankingTable(data) {
     const p = data.params;
     const rows = data.cities
-      .filter((c) => !rankView.country || c.country === rankView.country)
-      .sort((a, b) => rankView.dir * (a[rankView.sort] - b[rankView.sort]));
+      .filter((c) => !rankView.continent || c.continent === rankView.continent)
+      .sort((a, b) => {
+        // Continents sort in a fixed geographic order, then by gain within each continent.
+        if (rankView.sort === "continent") {
+          const d = CONTINENTS.indexOf(a.continent) - CONTINENTS.indexOf(b.continent);
+          return d ? rankView.dir * d : b.built_change_pts - a.built_change_pts;
+        }
+        return rankView.dir * (a[rankView.sort] - b[rankView.sort]);
+      });
     const sortHead = (key, label) => {
       const on = rankView.sort === key;
       return `<th aria-sort="${on ? (rankView.dir < 0 ? "descending" : "ascending") : "none"}">
@@ -1644,13 +1653,14 @@
     };
     if (!rows.length) return `<p class="meta">${esc(t("noResults"))}</p>`;
     return `<table class="rankings">
-      <thead><tr><th>#</th><th>${esc(t("city"))}</th><th>${esc(p.before)}</th><th>${esc(p.after)}</th>
+      <thead><tr><th>#</th><th>${esc(t("city"))}</th>${sortHead("continent", t("continent"))}<th>${esc(p.before)}</th><th>${esc(p.after)}</th>
         ${sortHead("built_change_pts", t("rankGain"))}${sortHead("built_km2", t("rankKm2"))}</tr></thead>
       <tbody>${rows.map((c, i) => `
         <tr data-city="${data.cities.indexOf(c)}">
           <td>${i + 1}</td>
-          <td><button type="button" class="row-link" data-city="${data.cities.indexOf(c)}">${esc(c.name)}</button>
+          <td><button type="button" class="row-link" data-city="${data.cities.indexOf(c)}">${esc(cityName(c))}</button>
             <small>${esc(countryName(c.country))}</small>${c.experimental ? ` <span class="tag">${esc(t("experimental"))}</span>` : ""}</td>
+          <td>${esc(continentName(c.continent))}</td>
           <td>${pct(c.built_before)}</td><td>${pct(c.built_after)}</td>
           <td>${c.built_change_pts > 0 ? "+" : ""}${num(c.built_change_pts)}</td><td>${num(c.built_km2)}</td>
         </tr>`).join("")}</tbody></table>`;
@@ -1664,7 +1674,7 @@
     setMode("change");
     $("before").value = params.before;
     $("after").value = params.after;
-    setPlace(city.lat, city.lon, city.name);
+    setPlace(city.lat, city.lon, cityName(city));
     $("controls").requestSubmit();
   }
 
@@ -1673,7 +1683,7 @@
     const sort = e.target.closest("button[data-sort]");
     if (sort) {
       const key = sort.dataset.sort;
-      rankView.dir = rankView.sort === key ? -rankView.dir : -1;
+      rankView.dir = rankView.sort === key ? -rankView.dir : key === "continent" ? 1 : -1;
       rankView.sort = key;
       $("ranking-table").innerHTML = rankingTable(data);
       $("ranking-table").querySelector(`[data-sort="${key}"]`).focus();
@@ -1683,8 +1693,8 @@
     if (row) openCityReport(data.cities[Number(row.dataset.city)], data.params);
   });
   $("rankings-body").addEventListener("change", async (e) => {
-    if (e.target.id !== "rank-country") return;
-    rankView.country = e.target.value;
+    if (e.target.id !== "rank-continent") return;
+    rankView.continent = e.target.value;
     $("ranking-table").innerHTML = rankingTable(await loadData("rankings"));
   });
 
@@ -1702,19 +1712,24 @@
 
   async function renderStories() {
     const { stories } = await loadData("stories");
+    const card = (s) => {
+      const text = s.description[state.lang] || "";
+      return `<li class="story">
+        <button type="button" class="story-open" data-story="${esc(s.id)}">
+          <img src="data/stories/${esc(s.id)}-thumb.jpg" alt="" loading="lazy" width="320" height="240">
+          <strong>${esc(storyTitle(s))}</strong>
+          <span class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km
+            ${s.experimental ? `<span class="tag">${esc(t("experimental"))}</span>` : ""}</span>
+        </button>
+        ${text ? `<p>${esc(text)}</p>` : ""}
+        ${storySources(s)}</li>`;
+    };
+    const groups = ["turkey", ...CONTINENTS].filter((g) => stories.some((s) => s.group === g));
     return `
       <p class="lead">${esc(t("storiesIntro"))}</p>
-      <ul class="stories">${stories.map((s) => {
-        const text = s.description[state.lang] || "";
-        return `<li class="story">
-          <button type="button" class="story-open" data-story="${esc(s.id)}">
-            <img src="data/stories/${esc(s.id)}-thumb.jpg" alt="" loading="lazy" width="320" height="240">
-            <strong>${esc(storyTitle(s))}</strong>
-            <span class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km</span>
-          </button>
-          ${text ? `<p>${esc(text)}</p>` : ""}
-          ${storySources(s)}</li>`;
-      }).join("")}</ul>`;
+      <p class="meta">${esc(t("experimentalNote"))}</p>
+      ${groups.map((g) => `<div class="story-group"><h3>${esc(g === "turkey" ? t("groupTurkey") : continentName(g))}</h3>
+        <ul class="stories">${stories.filter((s) => s.group === g).map(card).join("")}</ul></div>`).join("")}`;
   }
 
   async function openStory(id) {

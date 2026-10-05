@@ -21,32 +21,23 @@ PHOTON = "https://photon.komoot.io/api/"
 OUT = Path(__file__).with_name("cities.csv")
 USER_AGENT = "land-change-rankings/1.0 (geocoding a fixed city list)"
 
-# Turkey: the 81 province centres. Where the centre has its own name, that name is the query.
-TURKEY = [
-    "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin",
-    "Aydın", "Balıkesir", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale",
-    "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum",
-    "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", ("Hatay", "Antakya"), "Isparta",
-    "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli", "Kırşehir",
-    ("Kocaeli", "İzmit"), "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin",
-    "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Rize", ("Sakarya", "Adapazarı"), "Samsun",
-    "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Şanlıurfa", "Uşak",
-    "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman", "Kırıkkale", "Batman",
-    "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce",
+# Popular cities around the world, grouped by continent. A fourth value is the query when the
+# geocoder only knows the local name. EuroSAT was trained on European scenes, so every city
+# outside Europe and Turkey is marked experimental.
+CITIES = [
+    ("İstanbul", "TR", "europe"), ("London", "GB", "europe"), ("Paris", "FR", "europe"),
+    ("Madrid", "ES", "europe"), ("Rome", "IT", "europe", "Roma"),
+    ("Tokyo", "JP", "asia", "東京都"), ("Delhi", "IN", "asia"), ("Shanghai", "CN", "asia", "上海市"),
+    ("Dubai", "AE", "asia"), ("Singapore", "SG", "asia"),
+    ("Cairo", "EG", "africa", "Cairo Egypt"), ("Lagos", "NG", "africa"), ("Nairobi", "KE", "africa"),
+    ("New York", "US", "north_america", "New York City"), ("Los Angeles", "US", "north_america"),
+    ("Mexico City", "MX", "north_america", "Ciudad de México"),
+    ("São Paulo", "BR", "south_america"), ("Buenos Aires", "AR", "south_america"),
+    ("Sydney", "AU", "oceania"), ("Melbourne", "AU", "oceania"),
 ]
-
-# Large European cities (capitals and the biggest metropolitan areas). A third value is the
-# query when the geocoder only knows the local name.
-EUROPE = [
-    ("London", "GB"), ("Manchester", "GB"), ("Birmingham", "GB"), ("Paris", "FR"), ("Lyon", "FR"),
-    ("Marseille", "FR"), ("Berlin", "DE"), ("Hamburg", "DE"), ("Munich", "DE"), ("Cologne", "DE"),
-    ("Madrid", "ES"), ("Barcelona", "ES"), ("Valencia", "ES"), ("Rome", "IT"), ("Milan", "IT"),
-    ("Naples", "IT", "Napoli"), ("Amsterdam", "NL"), ("Rotterdam", "NL"), ("Brussels", "BE"), ("Vienna", "AT"),
-    ("Zurich", "CH"), ("Prague", "CZ"), ("Warsaw", "PL"), ("Kraków", "PL"), ("Budapest", "HU"),
-    ("Bucharest", "RO"), ("Sofia", "BG"), ("Athens", "GR"), ("Thessaloniki", "GR"), ("Belgrade", "RS"),
-    ("Zagreb", "HR"), ("Lisbon", "PT", "Lisboa"), ("Porto", "PT"), ("Dublin", "IE"), ("Copenhagen", "DK"),
-    ("Stockholm", "SE"), ("Oslo", "NO"), ("Helsinki", "FI"),
-]
+EUROPEAN = {"europe"}
+# Turkish display names (the ranking shows them in the Turkish interface).
+TR_NAMES = {'İstanbul': 'İstanbul', 'London': 'Londra', 'Paris': 'Paris', 'Madrid': 'Madrid', 'Rome': 'Roma', 'Tokyo': 'Tokyo', 'Delhi': 'Delhi', 'Shanghai': 'Şanghay', 'Dubai': 'Dubai', 'Singapore': 'Singapur', 'Cairo': 'Kahire', 'Lagos': 'Lagos', 'Nairobi': 'Nairobi', 'New York': 'New York', 'Los Angeles': 'Los Angeles', 'Mexico City': 'Meksiko', 'São Paulo': 'São Paulo', 'Buenos Aires': 'Buenos Aires', 'Sydney': 'Sidney', 'Melbourne': 'Melbourne'}
 
 PLACE_TYPES = {"city", "town"}
 
@@ -70,11 +61,8 @@ def geocode(query, country):
 
 
 def entries():
-    for item in TURKEY:
-        name, query = item if isinstance(item, tuple) else (item, item)
-        yield name, "TR", query
-    for name, country, *query in EUROPE:
-        yield name, country, query[0] if query else name
+    for name, country, continent, *query in CITIES:
+        yield name, country, continent, query[0] if query else name
 
 
 def main():
@@ -84,15 +72,14 @@ def main():
     args = ap.parse_args()
 
     rows, misses = [], []
-    for name, country, query in entries():
+    for name, country, continent, query in entries():
         hit = geocode(query, country)
         if hit is None:
             misses.append(f"{name} ({country})")
         else:
             lat, lon, label = hit
-            # EuroSAT was trained on European scenes; Turkey and Europe are the first-release scope.
-            rows.append({"name": name, "country": country, "lat": lat, "lon": lon, "experimental": 0,
-                         "geocoded_as": label, "reviewed": "no"})
+            rows.append({"name": name, "name_tr": TR_NAMES.get(name, name), "country": country, "continent": continent, "lat": lat, "lon": lon,
+                         "experimental": 0 if continent in EUROPEAN else 1, "geocoded_as": label, "reviewed": "no"})
         time.sleep(args.sleep)
 
     if args.dry_run:

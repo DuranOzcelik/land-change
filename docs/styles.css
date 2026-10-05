@@ -372,6 +372,9 @@ table.rankings tbody tr:hover { background: var(--wash); }
   display: inline-block; padding: 1px 8px; border-radius: var(--r-pill); background: var(--surface-2);
   color: var(--ink); font-size: 12px; font-weight: 500;
 }
+.story-group { display: flex; flex-direction: column; gap: 12px; }
+.story-group h3 { margin: 8px 0 0; color: var(--ink); font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
+.story-open .tag { margin-left: 6px; }
 .stories { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 .story { display: flex; flex-direction: column; gap: 8px; }
 .story p { margin: 0; font-size: 14px; }
