@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/-5_-12"] = {"w":[],"i":[],"n":[{"k":"plateau","name":{"tr":"Brezilya Platosu","en":"Brazilian Highlands"},"p":[[[-55.0,-21.892,-57.635,-21.483,-57.053,-20.001,-55.572,-20.319,-55.46,-20.0,-55.0,-20.0,-55.0,-21.892]]]},{"k":"plateau","name":{"tr":"Brezilya Platosu","en":"Brazilian Highlands"},"p":[[[-57.212,-24.87,-57.635,-22.859,-57.741,-21.112,-57.265,-20.001,-55.572,-20.319,-55.47,-20.0,-55.0,-20.0,-55.0,-25.0,-57.233,-25.0,-57.212,-24.87]]]}]};

@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/11_19"] = {"w":[],"i":[],"n":[{"k":"mountain","name":{"tr":"DOĞU SAYAN DAĞLARI","en":"Eastern Sayan Mountains"},"p":[[[95.0,55.194,95.127,55.203,95.326,55.265,95.702,55.447,95.928,55.507,96.463,55.527,96.725,55.48,97.99,55.0,95.0,55.0,95.0,55.194]]]},{"k":"plateau","name":{"tr":"Orta Sibirya Platosu","en":"Central Siberian Plateau"},"p":[[[98.652,58.514,95.0,58.762,95.0,60.0,100.0,60.0,100.0,58.774,98.652,58.514]]]}]};

@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/3_2"] = {"w":[],"i":[],"n":[{"k":"desert","name":{"tr":"Ténéré","en":"Ténéré"},"p":[[[10.821,15.294,10.341,16.11,10.0,17.248,10.0,20.0,15.0,20.0,15.0,15.0,11.381,15.0,10.821,15.294]]]},{"k":"desert","name":{"tr":"Sahra","en":"Sahara"},"p":[[[10.0,15.0,10.0,20.0,15.0,20.0,15.0,15.0,10.0,15.0]]]}]};

@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/10_-11"] = {"w":[[[-55.0,50.0,-55.0,55.0,-50.0,55.0,-50.0,50.0,-55.0,50.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Atlas Okyanusu","en":"Atlantic Ocean"},"p":[[[-50.0,51.513,-50.0,50.0,-51.108,50.0,-50.0,51.513]]]},{"k":"sea","name":{"tr":"Labrador Denizi","en":"Labrador Sea"},"p":[[[-51.108,50.0,-55.0,50.0,-55.0,55.0,-50.0,55.0,-50.0,51.513,-51.108,50.0]]]}]};

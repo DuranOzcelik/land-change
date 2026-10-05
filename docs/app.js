@@ -34,6 +34,7 @@
     layer: "split",       // what the map shows in change mode: split | before | after | change
     split: 0.5,           // handle position as a share of the map width
     color: "groups",      // cell colouring: groups | classes | confidence
+    prior: store.get("prior") !== "off",   // apply the Natural Earth correction
     opacity: 0.55,
   };
 
@@ -128,15 +129,30 @@
 
   map.on("click", (e) => {
     const { lat, lng } = e.lngLat;
-    setPlace(lat, lng, `${lat.toFixed(3)}, ${lng.toFixed(3)}`);
-    fetch(`${PHOTON}/reverse?lat=${lat}&lon=${lng}`)
-      .then((r) => r.json())
-      .then((j) => {
-        const f = j.features && j.features[0];
-        if (f && state.place && state.place.lat === lat) { state.place.label = placeLabel(f).full; showPlaceLine(); }
-      })
-      .catch(() => { /* the coordinate label stays */ });
+    const coords = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    setPlace(lat, lng, coords);
+    nameAt(lat, lng).then((name) => {
+      if (name && state.place && state.place.lat === lat) { state.place.label = name; showPlaceLine(); }
+    });
   });
+
+  // A readable name for a point: the sea or lake when it is open water, otherwise the nearest
+  // place from Photon, otherwise a Natural Earth area (desert, mountains, island...). Areas that
+  // span hundreds of kilometres keep the coordinates next to the name.
+  async function nameAt(lat, lon) {
+    const coords = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+    // Only settlement-level results: a bare reverse lookup tends to return the nearest shop.
+    const layers = "&layer=locality&layer=district&layer=city&layer=county";
+    const photon = fetch(`${PHOTON}/reverse?lat=${lat}&lon=${lon}${layers}${state.lang === "en" ? "&lang=en" : ""}`)
+      .then((r) => r.json()).then((j) => (j.features && j.features[0]) || null).catch(() => null);
+    const [water, area, place] = await Promise.all([inOpenWater(lat, lon), geoName(lat, lon), photon]);
+    const km = (f) => {
+      const [plon, plat] = f.geometry.coordinates;
+      return Math.hypot((plon - lon) * 111.32 * Math.cos((lat * Math.PI) / 180), (plat - lat) * 110.574);
+    };
+    if (area && (water || !place || km(place) > 10)) return `${area.name}, ${coords}`;
+    return place ? placeLabel(place).full : null;
+  }
 
   /* ------------------------------------------------------------------ split view */
 
@@ -347,7 +363,13 @@
     if (coords) {
       const lat = Number(coords[1]), lon = Number(coords[2]);
       const label = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-      return showSuggestions([{ name: label, rest: "", full: label, lat, lon }]);
+      showSuggestions([{ name: label, rest: "", full: label, lat, lon }]);
+      const name = await nameAt(lat, lon);
+      if (name && searchInput.value.trim() === query) {
+        const title = name.endsWith(label) ? name.slice(0, -label.length - 2) : name;
+        showSuggestions([{ name: title, rest: label, full: name, lat, lon }]);
+      }
+      return;
     }
     if (suggestAbort) suggestAbort.abort();
     suggestAbort = new AbortController();
@@ -560,9 +582,10 @@
         const detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || "");
         throw new Error(res.status === 404 ? t("errNoImagery") : res.status === 422 ? t("errInput") + detail : t("errNetwork"));
       }
-      const body = await res.json();
+      const raw = await res.json();
+      const { body, prior } = await withPrior(state.mode, raw);
       await mapReady;
-      state.data = { mode: state.mode, body, label: state.place.label };
+      state.data = { mode: state.mode, raw, body, prior, label: state.place.label };
       state.layer = "split";
       sheetOpen = false;
       setStatus("");
@@ -597,7 +620,7 @@
     const years = [];
     for (let y = start; y <= end; y++) years.push(y);
     // points[year]: a layer, null for a gap (no image or failed), undefined while pending.
-    const series = { years, points: {}, missing: [], failed: [] };
+    const series = { years, points: {}, raw: {}, priors: {}, missing: [], failed: [] };
     stopPlaying();
     state.data = { mode: "time", body: series, label: state.place.label };
     state.timeYear = null;
@@ -630,7 +653,12 @@
         query.set("when", String(year));
         try {
           const res = await fetch(`${API}/api/analyze?${query}`, { signal });
-          if (res.ok) series.points[year] = await res.json();
+          if (res.ok) {
+            series.raw[year] = await res.json();
+            const { body, prior } = await withPrior("time", series.raw[year]);
+            series.points[year] = body;
+            series.priors[year] = prior;
+          }
           else {
             series.points[year] = null;
             (res.status === 404 ? series.missing : series.failed).push(year);
@@ -806,14 +834,14 @@
     }
     if (state.color === "confidence") {
       const ink = hexToRgb(cssVar("--c-lowconf"));
-      return (r, c) => [...ink, confidenceAlpha(side.grid.confidence[r][c])];
+      return (r, c) => [...ink, side.grid.groups[r][c] < 0 ? 0 : confidenceAlpha(side.grid.confidence[r][c])];
     }
     if (state.color === "classes") {
       const colors = CLASSES.map((k) => hexToRgb(cssVar(`--c-${k}`)));
-      return (r, c) => [...colors[side.grid.classes[r][c]], 255];
+      return (r, c) => (side.grid.classes[r][c] < 0 ? [0, 0, 0, 0] : [...colors[side.grid.classes[r][c]], 255]);
     }
     const colors = GROUPS.map((g) => hexToRgb(cssVar(`--c-${g}`)));
-    return (r, c) => [...colors[side.grid.groups[r][c]], 255];
+    return (r, c) => (side.grid.groups[r][c] < 0 ? [0, 0, 0, 0] : [...colors[side.grid.groups[r][c]], 255]);
   }
 
   // One pixel per cell, then enlarged without smoothing so cells stay crisp on the map.
@@ -837,6 +865,177 @@
     bctx.imageSmoothingEnabled = false;
     bctx.drawImage(small, 0, 0, big.width, big.height);
     return big;
+  }
+
+  /* ------------------------------------------------------------------ prior knowledge */
+
+  // Natural Earth geography (docs/data/geo, built by scripts/build_geo_prior.py) supplies what the
+  // model cannot know: cells whose centre lies in open water well away from any shore count as
+  // water, and glacier cells are left out of the statistics (EuroSAT has no ice class). Deserts and
+  // mountain ranges only get a warning, since real towns and fields exist there too.
+  const PRIOR_WARN = ["desert", "mountain"];
+  const NAME_ORDER = ["lake", "sea", "ice", "desert", "mountain", "island", "peninsula", "plateau", "tundra", "delta"];
+
+  async function geoTile(lat, lon) {
+    const index = await loadData("geo/index");
+    const key = `${Math.floor(lat / index.tile)}_${Math.floor(lon / index.tile)}`;
+    return index.tiles.includes(key) ? loadData(`geo/${key}`) : null;
+  }
+
+  // Ray casting over rings of flat [lon, lat, ...] arrays; holes flip the parity.
+  function inRings(rings, x, y) {
+    let inside = false;
+    for (const r of rings) {
+      for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
+        const xi = r[i], yi = r[i + 1], xj = r[j], yj = r[j + 1];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+      }
+    }
+    return inside;
+  }
+  const inAny = (polys, x, y) => polys.some((rings) => inRings(rings, x, y));
+
+  // Named area at a point (sea, lake, desert...), in the interface language, or null.
+  async function geoName(lat, lon) {
+    try {
+      const tile = await geoTile(lat, lon);
+      if (!tile) return null;
+      const hits = tile.n.filter((f) => inAny(f.p, lon, lat));
+      hits.sort((a, b) => NAME_ORDER.indexOf(a.k) - NAME_ORDER.indexOf(b.k));
+      return hits.length ? { kind: hits[0].k, name: hits[0].name[state.lang] || hits[0].name.en } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function inOpenWater(lat, lon) {
+    try {
+      const tile = await geoTile(lat, lon);
+      return Boolean(tile && inAny(tile.w, lon, lat));
+    } catch {
+      return false;
+    }
+  }
+
+  function cellCentres(grid) {
+    const [tl, tr, br, bl] = grid.corners;
+    const out = [];
+    for (let r = 0; r < grid.rows; r++) {
+      for (let c = 0; c < grid.cols; c++) {
+        const u = (c + 0.5) / grid.cols, v = (r + 0.5) / grid.rows;
+        const top = [tl[0] + (tr[0] - tl[0]) * u, tl[1] + (tr[1] - tl[1]) * u];
+        const bottom = [bl[0] + (br[0] - bl[0]) * u, bl[1] + (br[1] - bl[1]) * u];
+        out.push([top[0] + (bottom[0] - top[0]) * v, top[1] + (bottom[1] - top[1]) * v]);
+      }
+    }
+    return out;
+  }
+
+  // Which cells of a grid lie in open water or on ice, and which warned regions hold the centre.
+  const maskCache = new Map();
+  function priorMask(grid) {
+    const key = JSON.stringify([grid.corners, grid.rows, grid.cols]);
+    if (!maskCache.has(key)) {
+      maskCache.set(key, (async () => {
+        const centres = cellCentres(grid);
+        const water = new Uint8Array(centres.length), ice = new Uint8Array(centres.length);
+        const tiles = new Map();
+        for (const [i, [lon, lat]] of centres.entries()) {
+          const k = `${Math.floor(lat)}|${Math.floor(lon)}`;
+          if (!tiles.has(k)) tiles.set(k, await geoTile(lat, lon));
+          const tile = tiles.get(k);
+          if (!tile) continue;
+          if (inAny(tile.w, lon, lat)) water[i] = 1;
+          else if (inAny(tile.i, lon, lat)) ice[i] = 1;
+        }
+        const [lon, lat] = centres[Math.floor(centres.length / 2)];
+        const tile = await geoTile(lat, lon);
+        const regions = tile ? tile.n.filter((f) => PRIOR_WARN.includes(f.k) && inAny(f.p, lon, lat)) : [];
+        return { water, ice, regions };
+      })());
+      maskCache.get(key).catch(() => maskCache.delete(key));
+    }
+    return maskCache.get(key);
+  }
+
+  const round = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
+
+  // Applies the mask to one layer. Statistics move by whole cells from the API's own km2 values,
+  // so untouched values stay exactly as the API reported them.
+  function correctLayer(layer, mask, cellKm2) {
+    const { rows, cols } = layer.grid;
+    const groups = layer.grid.groups.map((row) => row.slice());
+    const classes = layer.grid.classes.map((row) => row.slice());
+    const dGroup = {}, dClass = {};
+    const move = (d, from, to) => { d[from] = (d[from] || 0) - cellKm2; if (to) d[to] = (d[to] || 0) + cellKm2; };
+    let relabelled = 0, removed = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const i = r * cols + c, g = groups[r][c], k = classes[r][c];
+        if (mask.ice[i]) {
+          move(dGroup, GROUPS[g]); move(dClass, CLASSES[k]);
+          groups[r][c] = -1; classes[r][c] = -1;
+          removed++;
+        } else if (mask.water[i] && GROUPS[g] !== "water") {
+          move(dGroup, GROUPS[g], "water"); move(dClass, CLASSES[k], "SeaLake");
+          groups[r][c] = GROUPS.indexOf("water"); classes[r][c] = CLASSES.indexOf("SeaLake");
+          relabelled++;
+        }
+      }
+    }
+    if (!relabelled && !removed) return { layer, relabelled, removed };
+    const total = layer.stats.total_km2 - removed * cellKm2;
+    const fix = (items, d) => {
+      const out = items.map((it) => ({ ...it, km2: Math.max(0, it.km2 + (d[it.key] || 0)) }));
+      Object.keys(d).forEach((key) => { if (!out.some((it) => it.key === key) && d[key] > 0) out.push({ key, km2: d[key] }); });
+      return out.map((it) => ({ ...it, km2: round(it.km2, 2), share: total > 0 ? round((it.km2 / total) * 100, 1) : 0 }));
+    };
+    return {
+      relabelled, removed,
+      layer: { ...layer, grid: { ...layer.grid, groups, classes },
+        stats: { ...layer.stats, total_km2: round(total, 2), groups: fix(layer.stats.groups, dGroup), classes: fix(layer.stats.classes, dClass) } },
+    };
+  }
+
+  // Change results: corrected cells can no longer count as changed.
+  function correctCompare(body, mask) {
+    const cellKm2 = body.cell_km2 ?? (body.cell_m / 1000) ** 2;
+    const a = correctLayer(body.before, mask, cellKm2), b = correctLayer(body.after, mask, cellKm2);
+    if (a.layer === body.before && b.layer === body.after) return { body, relabelled: 0, removed: 0 };
+    const cols = body.before.grid.cols;
+    let changedKm2 = body.changed_km2, builtKm2 = body.built_km2, relabelled = 0;
+    const moves = new Map(body.transitions.map((m) => [`${m.from}>${m.to}`, { ...m }]));
+    const changed = body.changed.map((row, r) => row.map((v, c) => {
+      const i = r * cols + c;
+      const gb = GROUPS[body.before.grid.groups[r][c]], ga = GROUPS[body.after.grid.groups[r][c]];
+      if (mask.water[i] && (gb !== "water" || ga !== "water")) relabelled++;
+      if (!v || !(mask.water[i] || mask.ice[i])) return v;
+      changedKm2 -= cellKm2;
+      if (ga === "built" && gb !== "built") builtKm2 -= cellKm2;
+      const m = moves.get(`${gb}>${ga}`);
+      if (m) m.km2 -= cellKm2;
+      return 0;
+    }));
+    const transitions = [...moves.values()].filter((m) => m.km2 > 0.005)
+      .map((m) => ({ ...m, km2: round(m.km2, 2) })).sort((x, y) => y.km2 - x.km2);
+    return {
+      relabelled, removed: Math.max(a.removed, b.removed),
+      body: { ...body, before: a.layer, after: b.layer, changed, transitions,
+        changed_km2: round(Math.max(0, changedKm2), 2), built_km2: round(Math.max(0, builtKm2), 2) },
+    };
+  }
+
+  // Raw API body -> { body, prior } for the current setting. Without geo data the raw body is used.
+  async function withPrior(mode, raw) {
+    try {
+      const grid = mode === "change" ? raw.before.grid : raw.grid;
+      const mask = await priorMask(grid);
+      const result = mode === "change" ? correctCompare(raw, mask) : correctLayer(raw, mask, raw.cell_km2 ?? (raw.cell_m / 1000) ** 2);
+      const prior = { relabelled: result.relabelled, removed: result.removed, regions: mask.regions };
+      return { body: state.prior ? (result.body ?? result.layer) : raw, prior };
+    } catch {
+      return { body: raw, prior: null };
+    }
   }
 
   // Encoded overlays are cached per layer, colouring and theme, so the animation does not redraw them.
@@ -906,6 +1105,20 @@
     return `<details><summary>${esc(t("details"))}</summary><table><tbody>${rows}</tbody></table></details>`;
   }
 
+  // What the Natural Earth prior did here, with a switch back to the raw model output.
+  function priorNotice(prior) {
+    if (!prior) return "";
+    const lines = [];
+    if (prior.relabelled) lines.push(t(state.prior ? "priorWater" : "priorWaterOff").replace("{n}", prior.relabelled));
+    if (prior.removed) lines.push(t(state.prior ? "priorIce" : "priorIceOff").replace("{n}", prior.removed));
+    prior.regions.forEach((r) => lines.push(t(`priorRegion_${r.k}`).replace("{name}", r.name[state.lang] || r.name.en)));
+    if (!lines.length) return "";
+    const toggle = prior.relabelled || prior.removed ? `
+      <label class="check"><input type="checkbox" id="prior-toggle"${state.prior ? " checked" : ""}>
+        <span>${esc(t("priorToggle"))}</span></label>` : "";
+    return `<div class="notice prior">${lines.map((l) => `<p>${esc(l)}</p>`).join("")}${toggle}</div>`;
+  }
+
   function notices(...sides) {
     const out = [];
     if (state.data.mode === "change" && state.data.body.season_warning) out.push(t("seasonWarning"));
@@ -939,6 +1152,7 @@
       <div class="sheet-body" id="sheet-body">
       <p class="meta">${esc(t("imageDate"))}: ${esc(body.date)} &nbsp; ${esc(t("totalArea"))}: ${num(body.stats.total_km2, 0)} km²</p>
       ${notices(body)}
+      ${priorNotice(state.data.prior)}
       ${bars(body.stats.groups)}
       ${classTable(body.stats.classes)}
       ${colorControl(body)}
@@ -971,6 +1185,7 @@
         ${esc(t("changedTotal"))}: ${num(body.changed_km2)} km²</p>
       ${state.data.story ? storyBlock(state.data.story) : ""}
       ${notices(a, b)}
+      ${priorNotice(state.data.prior)}
       <div><p class="subhead">${esc(t("layer"))}</p>
         <div class="segmented small" id="layer">${["split", "before", "after", "change"].map(layerButton).join("")}</div>
         <div class="sides" id="sides"${state.layer === "split" ? "" : " hidden"}>
@@ -1027,6 +1242,7 @@
     return `
       <p class="meta">${esc(t("yearsMeta").replace("{n}", body.years.length))}${any ? ` &nbsp; ${esc(t("totalArea"))}: ${num(any.stats.total_km2, 0)} km²` : ""}</p>
       ${notes.map((n) => `<p class="notice">${esc(n)}</p>`).join("")}
+      ${priorNotice(body.priors[state.timeYear])}
       <div><p class="subhead">${esc(t("chartTitle"))}</p>
         <div class="chart" id="chart" tabindex="0" role="group" aria-label="${esc(t("chartLabel"))}">
           ${chartSvg(body)}
@@ -1225,6 +1441,30 @@
 
     applySheet();
   }
+
+  // Switching the prior re-derives the shown results from the raw API answers.
+  $("results").addEventListener("change", async (e) => {
+    if (e.target.id !== "prior-toggle") return;
+    state.prior = e.target.checked;
+    store.set("prior", state.prior ? "on" : "off");
+    const data = state.data;
+    if (data.mode === "time") {
+      const series = data.body;
+      for (const year of Object.keys(series.raw)) {
+        const { body, prior } = await withPrior("time", series.raw[year]);
+        series.points[year] = body;
+        series.priors[year] = prior;
+      }
+      data.paintedYear = undefined;
+      updateTimeline();
+    } else {
+      const { body, prior } = await withPrior(data.mode, data.raw);
+      data.body = body;
+      data.prior = prior;
+      renderResults();
+    }
+    $("prior-toggle")?.focus();
+  });
 
   // Panel controls are re-rendered often, so their clicks are handled once, here.
   $("results").addEventListener("click", (e) => {
@@ -1481,7 +1721,8 @@
     const { stories } = await loadData("stories");
     const story = stories.find((s) => s.id === id);
     if (!story) return false;
-    const body = await loadData(`stories/${id}`);
+    const raw = await loadData(`stories/${id}`);
+    const { body, prior } = await withPrior("change", raw);
     await mapReady;
     backToMap();
     stopPlaying();
@@ -1492,7 +1733,7 @@
     $("before").value = story.dates.before;
     $("after").value = story.dates.after;
     setPlace(lat, lon, storyTitle(story), false);
-    state.data = { mode: "change", body, label: storyTitle(story), story };
+    state.data = { mode: "change", raw, body, prior, label: storyTitle(story), story };
     state.layer = "split";
     sheetOpen = false;
     setStatus("");
@@ -1525,7 +1766,7 @@
       <li><strong>${esc(t(`step${k}`))}</strong><span>${esc(t(`step${k}Text`))}</span></li>`).join("");
     const groups = GROUPS.map((g) => `<li><span class="name">${swatch(g)}${esc(t(g))}</span>
       <span>${GROUP_CLASSES[g].map((c) => esc(t(c))).join(", ")}</span></li>`).join("");
-    const decisions = ["Groups", "Confidence", "Season", "Clouds"].map((k) => `
+    const decisions = ["Groups", "Confidence", "Season", "Clouds", "Prior"].map((k) => `
       <div><p class="subhead">${esc(t(`decision${k}`))}</p><p>${esc(t(`decision${k}Text`))}</p>
       ${k === "Groups" ? `<ul class="group-list">${groups}</ul>` : ""}</div>`).join("");
     const limits = ["Estimate", "Classes", "Europe", "Dates", "Window", "Season", "Basemap"]

@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/5_27"] = {"w":[[[135.0,25.0,135.0,30.0,140.0,30.0,140.0,25.0,135.0,25.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Filipin Denizi","en":"Philippine Sea"},"p":[[[135.0,25.0,135.0,30.0,140.0,30.0,140.0,25.0,135.0,25.0]]]},{"k":"island","name":{"tr":"NAMPÖ-SHOTÖ","en":"Nanpō Islands"},"p":[[[139.348,29.661,139.292,30.0,140.0,30.0,140.0,27.419,139.348,29.661]]]}]};

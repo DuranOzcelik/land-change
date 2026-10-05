@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/-5_12"] = {"w":[[[60.0,-25.0,60.0,-20.0,65.0,-20.0,65.0,-25.0,60.0,-25.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Hint Okyanusu","en":"Indian Ocean"},"p":[[[60.0,-25.0,60.0,-20.0,65.0,-20.0,65.0,-25.0,60.0,-25.0]]]},{"k":"island","name":{"tr":"Mascarene Adaları","en":"Mascarene Islands"},"p":[[[60.404,-21.853,60.0,-21.846,60.0,-20.0,65.0,-20.0,65.0,-21.114,60.404,-21.853]]]}]};

@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/-2_3"] = {"w":[],"i":[],"n":[{"k":"plateau","name":{"tr":"Bié Platosu","en":"Bié Plateau"},"p":[[[17.93,-9.868,18.459,-9.96,18.484,-10.0,17.829,-10.0,17.93,-9.868]]]},{"k":"mountain","name":{"tr":"CRYSTAL DAĞLARI","en":"Crystal Mountain"},"p":[[[15.231,-8.796,15.0,-8.912,15.0,-7.718,15.231,-8.796]]]}]};

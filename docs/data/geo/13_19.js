@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/13_19"] = {"w":[],"i":[],"n":[{"k":"lake","name":{"tr":"Ozero Tembenchi Gölü","en":"Ozero Tembenchi"},"p":[[[95.072,66.75,95.0,66.809,95.0,66.846,95.129,66.764,95.143,66.747,95.142,66.677,95.17,66.661,95.15,66.649,95.092,66.677,95.074,66.695,95.072,66.75]]]},{"k":"plateau","name":{"tr":"Orta Sibirya Platosu","en":"Central Siberian Plateau"},"p":[[[95.0,65.0,95.0,70.0,100.0,70.0,100.0,65.0,95.0,65.0]]]}]};

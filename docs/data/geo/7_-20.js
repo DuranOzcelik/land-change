@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/7_-20"] = {"w":[],"i":[],"n":[{"k":"mountain","name":{"tr":"Ouachita Dağları","en":"Ouachita Mountains"},"p":[[[-95.766,35.142,-95.561,35.262,-95.188,35.334,-95.075,35.473,-95.0,35.435,-95.0,35.0,-95.837,35.0,-95.766,35.142]]]},{"k":"plateau","name":{"tr":"Ozark Platosu","en":"Ozarks"},"p":[[[-95.188,35.579,-95.426,35.805,-95.136,36.232,-95.0,36.348,-95.0,35.485,-95.188,35.579]]]}]};

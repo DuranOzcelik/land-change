@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/12_26"] = {"w":[],"i":[],"n":[{"k":"mountain","name":{"tr":"Verkhoyansk Dağları","en":"Verkhoyansk Range"},"p":[[[134.507,63.578,133.844,63.618,132.161,63.831,130.348,63.923,130.0,63.979,130.0,65.0,132.979,65.0,134.749,64.668,135.0,64.646,135.0,63.509,134.507,63.578]]]},{"k":"plateau","name":{"tr":"Orta Sibirya Platosu","en":"Central Siberian Plateau"},"p":[[[130.059,62.39,130.0,62.248,130.0,62.497,130.059,62.39]]]}]};

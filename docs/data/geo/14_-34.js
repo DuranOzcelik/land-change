@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/14_-34"] = {"w":[[[-170.0,70.0,-170.0,75.0,-165.0,75.0,-165.0,70.0,-170.0,70.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Arktik Okyanusu","en":"Arctic Ocean"},"p":[[[-170.0,71.28,-170.0,75.0,-165.0,75.0,-165.0,71.327,-170.0,71.28]]]},{"k":"sea","name":{"tr":"Çukçi Denizi","en":"Chukchi Sea"},"p":[[[-165.0,71.327,-165.0,70.0,-170.0,70.0,-170.0,71.28,-165.0,71.327]]]}]};

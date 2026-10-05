@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/10_30"] = {"w":[[[150.0,50.0,150.0,55.0,155.0,55.0,155.0,50.0,150.0,50.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Ohotsk Denizi","en":"Sea of Okhotsk"},"p":[[[150.0,50.0,150.0,55.0,155.0,55.0,155.0,50.0,150.0,50.0]]]},{"k":"island","name":{"tr":"Kuril Adaları","en":"Kuril Islands"},"p":[[[154.733,50.687,155.0,50.884,155.0,50.0,154.047,50.0,154.733,50.687]]]}]};

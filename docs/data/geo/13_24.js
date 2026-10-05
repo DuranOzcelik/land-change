@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/13_24"] = {"w":[],"i":[],"n":[{"k":"plateau","name":{"tr":"Orta Sibirya Platosu","en":"Central Siberian Plateau"},"p":[[[124.355,69.11,123.474,67.77,123.444,67.611,123.519,66.769,123.578,66.566,123.768,66.149,124.114,65.655,124.353,65.422,124.892,65.086,125.0,65.039,125.0,65.0,120.0,65.0,120.0,70.0,125.0,70.0,125.0,69.594,124.355,69.11]]]}]};

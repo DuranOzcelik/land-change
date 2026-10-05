@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/-2_-12"] = {"w":[],"i":[],"n":[{"k":"mountain","name":{"tr":"S. do Cachimbo","en":"Serra do Cachimbo"},"p":[[[-56.401,-9.259,-57.247,-8.871,-57.565,-8.166,-57.847,-7.425,-57.882,-6.719,-57.6,-6.437,-56.859,-6.19,-56.365,-6.437,-55.66,-7.531,-55.0,-8.122,-55.0,-10.0,-55.413,-10.0,-56.401,-9.259]]]},{"k":"plateau","name":{"tr":"Mato Grosso Platosu","en":"Mato Grosso Plateau"},"p":[[[-60.0,-5.639,-59.196,-5.0,-55.0,-5.0,-55.0,-10.0,-60.0,-10.0,-60.0,-5.639]]]}]};

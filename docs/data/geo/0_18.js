@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/0_18"] = {"w":[[[90.0,0.0,90.0,5.0,95.0,5.0,95.0,0.0,90.0,0.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Hint Okyanusu","en":"Indian Ocean"},"p":[[[90.0,0.0,90.0,5.0,95.0,5.0,95.0,0.0,90.0,0.0]]]},{"k":"island","name":{"tr":"Büyük Sunda Adaları","en":"Greater Sunda Islands"},"p":[[[94.892,5.0,95.0,5.0,95.0,4.845,94.892,5.0]]]},{"k":"island","name":{"tr":"Malezya Takımadaları","en":"Malay Archipelago"},"p":[[[95.0,4.729,94.851,5.0,95.0,5.0,95.0,4.729]]]}]};

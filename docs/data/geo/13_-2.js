@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/13_-2"] = {"w":[[[-10.0,65.0,-10.0,70.0,-5.0,70.0,-5.0,65.0,-10.0,65.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Norveç Denizi","en":"Norwegian Sea"},"p":[[[-9.816,70.0,-5.0,70.0,-5.0,65.0,-10.0,65.0,-10.0,69.787,-9.816,70.0]]]},{"k":"sea","name":{"tr":"Grönland Denizi","en":"Greenland Sea"},"p":[[[-10.0,69.787,-10.0,70.0,-9.816,70.0,-10.0,69.787]]]}]};

@@ -1,2 +1,3 @@
 scripts/.rankings_cache.json
 __pycache__/
+scripts/.ne_cache/

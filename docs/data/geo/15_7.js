@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/15_7"] = {"w":[[[35.0,75.0,35.0,80.0,40.0,80.0,40.0,75.0,35.0,75.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Barents Denizi","en":"Barents Sea"},"p":[[[35.0,75.0,35.0,80.0,40.0,80.0,40.0,75.0,35.0,75.0]]]},{"k":"island","name":{"tr":"Svalbard","en":"Svalbard"},"p":[[[37.459,79.936,37.086,79.614,35.951,79.293,35.0,79.105,35.0,80.0,37.474,80.0,37.459,79.936]]]}]};

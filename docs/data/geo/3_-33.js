@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/3_-33"] = {"w":[[[-165.0,15.0,-165.0,20.0,-160.0,20.0,-160.0,15.0,-165.0,15.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Büyük Okyanus","en":"Pacific Ocean"},"p":[[[-165.0,15.0,-165.0,20.0,-160.0,20.0,-160.0,15.0,-165.0,15.0]]]},{"k":"island","name":{"tr":"Polinezya","en":"Polynesia"},"p":[[[-165.0,15.0,-165.0,20.0,-160.0,20.0,-160.0,15.0,-165.0,15.0]]]}]};

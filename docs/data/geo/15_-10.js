@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/15_-10"] = {"w":[],"i":[[[-50.0,75.0,-50.0,80.0,-45.0,80.0,-45.0,75.0,-50.0,75.0]]],"n":[{"k":"island","name":{"tr":"Grönland","en":"Greenland"},"p":[[[-50.0,75.0,-50.0,80.0,-45.0,80.0,-45.0,75.0,-50.0,75.0]]]},{"k":"ice","name":{"tr":"Greenland Ice Sheet","en":"Greenland Ice Sheet"},"p":[[[-50.0,75.0,-50.0,80.0,-45.0,80.0,-45.0,75.0,-50.0,75.0]]]}]};

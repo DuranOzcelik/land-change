@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/-8_25"] = {"w":[[[125.0,-40.0,125.0,-35.0,130.0,-35.0,130.0,-40.0,125.0,-40.0]]],"i":[],"n":[{"k":"sea","name":{"tr":"Hint Okyanusu","en":"Indian Ocean"},"p":[[[130.0,-38.636,130.0,-40.0,125.0,-40.0,125.0,-37.14,130.0,-38.636]]]},{"k":"sea","name":{"tr":"Büyük Avustralya Körfezi","en":"Great Australian Bight"},"p":[[[125.0,-37.14,125.0,-35.0,130.0,-35.0,130.0,-38.636,125.0,-37.14]]]}]};

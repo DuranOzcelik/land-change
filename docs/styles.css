@@ -292,6 +292,10 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 .transitions li { display: flex; justify-content: space-between; gap: 12px; }
 .subhead { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--ink); }
 
+.notice.prior { display: grid; gap: 6px; }
+.notice.prior p { margin: 0; }
+.check { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
 .notice { margin: 0; padding: 12px 14px; border-radius: var(--r-field); background: var(--wash); color: var(--ink); font-size: 14px; }
 .limits { margin: 0; font-size: 13px; color: var(--muted); }
 

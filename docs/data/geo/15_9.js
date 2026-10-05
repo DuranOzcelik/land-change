@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/15_9"] = {"w":[[[50.0,79.9924,49.9723,79.9836,49.9623,79.9739,49.9729,79.9656,50.0,79.9593,50.0,75.0,45.0,75.0,45.0,80.0,50.0,80.0,50.0,79.9924]]],"i":[],"n":[{"k":"sea","name":{"tr":"Barents Denizi","en":"Barents Sea"},"p":[[[45.0,75.0,45.0,80.0,50.0,80.0,50.0,75.0,45.0,75.0]]]},{"k":"island","name":{"tr":"Franz Josef Toprakları","en":"Franz Josef Land"},"p":[[[46.624,79.807,45.283,80.0,50.0,80.0,50.0,79.526,46.624,79.807]]]}]};

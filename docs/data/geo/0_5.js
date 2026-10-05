@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/0_5"] = {"w":[],"i":[],"n":[{"k":"mountain","name":{"tr":"Ruwenzori Sıradağı","en":"Rwenzori Mountains"},"p":[[[29.949,0.0,29.751,0.0,29.673,0.05,29.673,0.266,29.704,0.477,29.796,0.643,30.0,0.82,30.0,0.045,29.949,0.0]]]},{"k":"mountain","name":{"tr":"MİTUMBA DAĞLARI","en":"Mitumba Mountains"},"p":[[[29.078,0.407,29.466,0.707,29.713,1.095,30.0,1.433,30.0,0.306,29.801,0.01,28.878,0.0,29.078,0.407]]]}]};

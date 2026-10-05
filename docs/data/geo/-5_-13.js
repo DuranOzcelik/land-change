@@ -1,0 +1,2 @@
+// Natural Earth (public domain). Built by scripts/build_geo_prior.py.
+(window.LC_DATA = window.LC_DATA || {})["geo/-5_-13"] = {"w":[],"i":[],"n":[{"k":"mountain","name":{"tr":"CORDILLERA ORIENTAL","en":"Cordillera Oriental"},"p":[[[-63.985,-22.806,-64.911,-23.97,-65.0,-24.035,-65.0,-20.0,-63.128,-20.0,-63.985,-22.806]]]},{"k":"mountain","name":{"tr":"And Dağları","en":"Andes"},"p":[[[-63.086,-20.16,-63.827,-23.176,-64.295,-25.0,-65.0,-25.0,-65.0,-20.0,-63.111,-20.0,-63.086,-20.16]]]}]};
