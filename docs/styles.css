@@ -325,8 +325,9 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 .chart-tip .row b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
 table.years th .swatch { display: inline-block; }
 
-.player { display: flex; align-items: center; gap: 12px; }
+.player { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-pill); background: var(--surface-2); }
 .player[hidden] { display: none; }
+.player .pill-button { min-width: 96px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--ink); }
 .player input[type="range"] { flex: 1; min-width: 0; accent-color: var(--ink); }
 .player .speed { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); }
 .player .pill-select { padding: 5px 10px; font-size: 14px; }

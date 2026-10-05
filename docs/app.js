@@ -707,7 +707,8 @@
 
   /* ------------------------------------------------------------------ time-lapse */
 
-  // Plays the loaded years on the map. With reduced motion there is no playback, only the slider.
+  // Plays the loaded years on the map. The controls sit in the panel head, which stays in view
+  // (also in the closed phone sheet). With reduced motion there is no playback, only the slider.
   const SPEEDS = [0.5, 1, 2];
   const FRAME_MS = 1200;
   let playTimer = null;
@@ -989,10 +990,9 @@
 
   function renderTime() {
     return `
-      ${sheetHead(`<div id="time-figure"></div>`)}
+      ${sheetHead(`<div id="time-figure"></div>${playerHtml()}`)}
       <div class="sheet-body" id="sheet-body">
         <div id="timeline"></div>
-        ${playerHtml()}
         <div id="time-color"></div>
         ${opacityControl()}
         ${footer()}
@@ -1270,7 +1270,7 @@
   let dragged = false;
   sheet.addEventListener("pointerdown", (e) => {
     dragged = false;
-    if (wide() || !e.target.closest(".sheet-head")) return;
+    if (wide() || !e.target.closest(".sheet-head") || e.target.closest(".player")) return;   // controls in the head stay usable
     const closed = sheet.offsetHeight - $("sheet-head").offsetHeight;
     drag = { id: e.pointerId, y: e.clientY, from: sheetOpen ? 0 : closed, closed, offset: 0 };
   });
