@@ -1,0 +1,103 @@
+// Example analyses. Edit this file: titles, descriptions and sources (tr/en), locations and dates.
+// Titles are neutral place names. Descriptions and sources must come from or be approved by the project owner; set approved to true once they are. Coordinates: istanbul-airport from PLAN.md, the others from the Photon geocoder (see geocoded_as).
+// After changing a location or dates, run: python scripts/build_stories.py --only <id> --fresh
+(window.LC_DATA = window.LC_DATA || {})["stories"] = {
+ "stories": [
+  {
+   "id": "istanbul-airport",
+   "title": {
+    "tr": "İstanbul Havalimanı çevresi",
+    "en": "Around Istanbul Airport"
+   },
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 41.26,
+    "lon": 28.74,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "PLAN.md"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "kepez",
+   "title": {
+    "tr": "Kepez (Antalya)",
+    "en": "Kepez (Antalya)"
+   },
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 36.91763,
+    "lon": 30.71499,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "Kepez, Antalya (Photon, place=town)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "eskisehir",
+   "title": {
+    "tr": "Eskişehir",
+    "en": "Eskişehir"
+   },
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 39.77439,
+    "lon": 30.51912,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "Eskişehir, Türkiye (Photon, place=city; same as scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "bodrum",
+   "title": {
+    "tr": "Bodrum",
+    "en": "Bodrum"
+   },
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 37.0344,
+    "lon": 27.43065,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "Bodrum, Muğla (Photon, place=town)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  }
+ ]
+};

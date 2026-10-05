@@ -1,10 +1,10 @@
-"""Save the API response for every story in docs/data/stories.json, so stories open instantly.
+"""Save the API response for every example in docs/data/stories.js, so examples open instantly.
 
-For each story this calls /api/compare once and writes
-  docs/data/stories/<id>.json          the response, with image sources pointing at the files below
-  docs/data/stories/<id>-before.jpg    the earlier satellite image
-  docs/data/stories/<id>-after.jpg     the later satellite image
-Existing stories are skipped unless --fresh is given.
+For each example this calls /api/compare once and writes
+  docs/data/stories/<id>.js          the response (images stay embedded, so the map can show them
+                                     even when the page is opened from disk)
+  docs/data/stories/<id>-thumb.jpg   a small preview of the later image for the example card
+Existing examples are skipped unless --fresh is given. Needs Pillow for the thumbnail.
 
 Usage:  python scripts/build_stories.py [--only istanbul-airport,kepez] [--fresh]
 """
@@ -18,20 +18,25 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import datajs
+
 ROOT = Path(__file__).resolve().parent.parent
-STORIES = ROOT / "docs" / "data" / "stories.json"
+STORIES = ROOT / "docs" / "data" / "stories.js"
 OUT = ROOT / "docs" / "data" / "stories"
 API = "https://land-change-api-1098531335280.europe-west1.run.app"
 
 
-def split_image(layer, story_id, side):
-    """Write the data-URL image to a JPEG file and point the layer at it (path relative to docs/)."""
+def write_thumbnail(layer, story_id, size=480):
+    """Save a small JPEG preview of the layer's data-URL image for the example card."""
+    from io import BytesIO
+    from PIL import Image
+
     header, data = layer["image"]["src"].split(",", 1)
     if "image/jpeg" not in header:
         raise ValueError(f"unexpected image type: {header[:40]}")
-    name = f"{story_id}-{side}.jpg"
-    (OUT / name).write_bytes(base64.b64decode(data))
-    layer["image"]["src"] = f"data/stories/{name}"
+    image = Image.open(BytesIO(base64.b64decode(data)))
+    image.thumbnail((size, size))
+    image.save(OUT / f"{story_id}-thumb.jpg", quality=82)
 
 
 def fetch(story, api, retries=3, pause=10):
@@ -59,14 +64,14 @@ def main():
     ap.add_argument("--api", default=API)
     args = ap.parse_args()
 
-    stories = json.loads(STORIES.read_text(encoding="utf-8"))["stories"]
+    stories = datajs.read(STORIES)["stories"]
     if args.only:
         wanted = set(args.only.split(","))
         stories = [s for s in stories if s["id"] in wanted]
     OUT.mkdir(parents=True, exist_ok=True)
     failed = 0
     for story in stories:
-        target = OUT / f"{story['id']}.json"
+        target = OUT / f"{story['id']}.js"
         if target.exists() and not args.fresh:
             print(f"{story['id']}: exists, skipped")
             continue
@@ -76,9 +81,9 @@ def main():
             print(f"{story['id']}: failed ({err})", file=sys.stderr)
             failed += 1
             continue
-        split_image(body["before"], story["id"], "before")
-        split_image(body["after"], story["id"], "after")
-        target.write_text(json.dumps(body, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        write_thumbnail(body["after"], story["id"])
+        datajs.write(target, f"stories/{story['id']}", body,
+                     "Saved /api/compare response. Built by scripts/build_stories.py.", compact=True)
         print(f"{story['id']}: {body['before']['date']} -> {body['after']['date']}, built +{body['built_km2']} km2")
     return 1 if failed else 0
 

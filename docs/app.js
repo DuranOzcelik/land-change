@@ -115,8 +115,13 @@
     target.addLayer({ id: "frame", type: "line", source: "frame", paint: { "line-color": "#ffffff", "line-width": 2 } });
   }
 
+  // Results may arrive before the style has loaded (saved examples open instantly).
+  let mapLoaded;
+  const mapReady = new Promise((resolve) => { mapLoaded = resolve; });
+
   map.on("load", () => {
     addFrame(map);
+    mapLoaded();
     restoreFromLink();
     spin();
   });
@@ -555,7 +560,9 @@
         const detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || "");
         throw new Error(res.status === 404 ? t("errNoImagery") : res.status === 422 ? t("errInput") + detail : t("errNetwork"));
       }
-      state.data = { mode: state.mode, body: await res.json(), label: state.place.label };
+      const body = await res.json();
+      await mapReady;
+      state.data = { mode: state.mode, body, label: state.place.label };
       state.layer = "split";
       sheetOpen = false;
       setStatus("");
@@ -634,6 +641,7 @@
           series.failed.push(year);
         }
         done++;
+        await mapReady;
         if (state.data && state.data.body === series) {
           progress();
           updateTimeline();
@@ -1305,13 +1313,26 @@
 
   // Examples, the city ranking and "how it works" are always-open sections under the map.
   const SECTIONS = { examples: renderStories, rankings: renderRankings, about: renderAbout };
-  const jsonCache = new Map();
+  // Data files are small scripts that register themselves on window.LC_DATA (see scripts/datajs.py),
+  // so they also load when index.html is opened straight from disk, where fetch() is blocked.
+  const dataCache = new Map();
 
-  async function loadJson(url) {
-    if (!jsonCache.has(url)) {
-      jsonCache.set(url, fetch(url).then((r) => { if (!r.ok) throw new Error(url); return r.json(); }));
+  function loadData(name) {
+    if (!dataCache.has(name)) {
+      const loading = new Promise((resolve, reject) => {
+        const el = document.createElement("script");
+        el.src = `data/${name}.js`;
+        el.onload = () => {
+          const data = window.LC_DATA && window.LC_DATA[name];
+          if (data) resolve(data); else reject(new Error(name));
+        };
+        el.onerror = () => reject(new Error(name));
+        document.head.append(el);
+      });
+      loading.catch(() => dataCache.delete(name));
+      dataCache.set(name, loading);
     }
-    try { return await jsonCache.get(url); } catch (err) { jsonCache.delete(url); throw err; }
+    return dataCache.get(name);
   }
 
   function renderSections() {
@@ -1343,7 +1364,7 @@
   const rankView = { sort: "built_change_pts", dir: -1, country: "" };
 
   async function renderRankings() {
-    const data = await loadJson("data/rankings.json");
+    const data = await loadData("rankings");
     const p = data.params;
     const all = [...data.cities, ...data.unavailable];
     const countries = [...new Set(all.map((c) => c.country))]
@@ -1408,7 +1429,7 @@
   }
 
   $("rankings-body").addEventListener("click", async (e) => {
-    const data = await loadJson("data/rankings.json");
+    const data = await loadData("rankings");
     const sort = e.target.closest("button[data-sort]");
     if (sort) {
       const key = sort.dataset.sort;
@@ -1424,7 +1445,7 @@
   $("rankings-body").addEventListener("change", async (e) => {
     if (e.target.id !== "rank-country") return;
     rankView.country = e.target.value;
-    $("ranking-table").innerHTML = rankingTable(await loadJson("data/rankings.json"));
+    $("ranking-table").innerHTML = rankingTable(await loadData("rankings"));
   });
 
   /* ------------------------------------------------------------------ stories */
@@ -1440,14 +1461,14 @@
   }
 
   async function renderStories() {
-    const { stories } = await loadJson("data/stories.json");
+    const { stories } = await loadData("stories");
     return `
       <p class="lead">${esc(t("storiesIntro"))}</p>
       <ul class="stories">${stories.map((s) => {
         const text = s.description[state.lang] || "";
         return `<li class="story">
           <button type="button" class="story-open" data-story="${esc(s.id)}">
-            <img src="data/stories/${esc(s.id)}-after.jpg" alt="" loading="lazy" width="320" height="240">
+            <img src="data/stories/${esc(s.id)}-thumb.jpg" alt="" loading="lazy" width="320" height="240">
             <strong>${esc(storyTitle(s))}</strong>
             <span class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km</span>
           </button>
@@ -1457,10 +1478,11 @@
   }
 
   async function openStory(id) {
-    const { stories } = await loadJson("data/stories.json");
+    const { stories } = await loadData("stories");
     const story = stories.find((s) => s.id === id);
     if (!story) return false;
-    const body = await loadJson(`data/stories/${encodeURIComponent(id)}.json`);
+    const body = await loadData(`stories/${id}`);
+    await mapReady;
     backToMap();
     stopPlaying();
     const { lat, lon, size_km: size, cell_m: cell } = story.location;

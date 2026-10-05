@@ -1,4 +1,5 @@
-{
+// Built by scripts/build_rankings.py. Do not edit by hand.
+(window.LC_DATA = window.LC_DATA || {})["rankings"] = {
  "generated": "2026-10-05",
  "params": {
   "before": "2016",
@@ -122,4 +123,4 @@
    "reason": "season"
   }
  ]
-}
+};

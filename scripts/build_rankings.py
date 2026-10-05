@@ -1,4 +1,4 @@
-"""Build docs/data/rankings.json: built-up growth since 2016 for the cities in scripts/cities.csv.
+"""Build docs/data/rankings.js: built-up growth since 2016 for the cities in scripts/cities.csv.
 
 The live API is called once per city, one request at a time, with a pause between requests
 and retries on server or network errors. Each city's summary is cached in
@@ -23,10 +23,12 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import datajs
+
 ROOT = Path(__file__).resolve().parent.parent
 CITIES = ROOT / "scripts" / "cities.csv"
 CACHE = ROOT / "scripts" / ".rankings_cache.json"
-OUT = ROOT / "docs" / "data" / "rankings.json"
+OUT = ROOT / "docs" / "data" / "rankings.js"
 API = "https://land-change-api-1098531335280.europe-west1.run.app"
 
 MAX_UNUSABLE = 5.0      # percent of the image that is cloudy or missing
@@ -151,13 +153,13 @@ def main():
 
     ranked, unavailable = split_results(results)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({
+    datajs.write(OUT, "rankings", {
         "generated": dt.date.today().isoformat(),
         "params": {"before": before, "after": after, "size_km": 20, "cell_m": 640,
                    "max_unusable": MAX_UNUSABLE, "max_season_gap_days": MAX_SEASON_GAP},
         "complete": not args.only and not args.include_unreviewed,
         "cities": ranked, "unavailable": unavailable,
-    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    }, "Built by scripts/build_rankings.py. Do not edit by hand.")
     print(f"wrote {OUT}: {len(ranked)} ranked, {len(unavailable)} unavailable")
     return 0
 
