@@ -648,14 +648,14 @@
     return `<ul class="bars">${statsGroups.map((g) => `
       <li>
         <div class="head"><span class="name">${swatch(g.key)}${esc(t(g.key))}</span>
-          <span class="delta">%${num(g.share)} &nbsp; ${num(g.km2)} km²</span></div>
+          <span class="delta">${pct(g.share)} &nbsp; ${num(g.km2)} km²</span></div>
         <div class="track"><i style="width:${g.share}%;background:var(--c-${g.key})"></i></div>
       </li>`).join("")}</ul>`;
   }
 
   function classTable(classes) {
     const rows = classes.filter((c) => c.share > 0).sort((a, b) => b.share - a.share)
-      .map((c) => `<tr><td><span class="name">${swatch(c.key)}${esc(t(c.key))}</span></td><td>%${num(c.share)}</td><td>${num(c.km2)} km²</td></tr>`).join("");
+      .map((c) => `<tr><td><span class="name">${swatch(c.key)}${esc(t(c.key))}</span></td><td>${pct(c.share)}</td><td>${num(c.km2)} km²</td></tr>`).join("");
     return `<details><summary>${esc(t("details"))}</summary><table><tbody>${rows}</tbody></table></details>`;
   }
 
@@ -709,7 +709,7 @@
       const trend = Math.abs(Math.round(delta * 10) / 10) < NOISE_PTS ? "trendFlat" : delta > 0 ? "trendUp" : "trendDown";
       return `<tr><td><span class="name">${swatch(g.key)}${esc(t(g.key))}</span>
           <small class="trend">${esc(t(trend))}</small></td>
-        <td>%${num(g.share)}</td><td>%${num(after.share)}</td>
+        <td>${pct(g.share)}</td><td>${pct(after.share)}</td>
         <td>${delta > 0 ? "+" : ""}${num(delta)}</td></tr>`;
     }).join("");
     const moves = body.transitions.slice(0, 5)
@@ -758,7 +758,7 @@
   function colorControl(...sides) {
     const button = (key) =>
       `<button type="button" data-color="${key}" aria-selected="${state.color === key}">${esc(t("color" + key[0].toUpperCase() + key.slice(1)))}</button>`;
-    const low = sides.map((s) => `%${num(s.stats.low_confidence_share)}`).join(" → ");
+    const low = sides.map((s) => `${pct(s.stats.low_confidence_share)}`).join(" → ");
     return `<div><p class="subhead">${esc(t("colorBy"))}</p>
       <div class="segmented small" id="color">${["groups", "classes", "confidence"].map(button).join("")}</div>
       <p class="meta">${esc(t("lowConfidence"))}: ${low}</p></div>`;
