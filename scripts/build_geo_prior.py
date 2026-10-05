@@ -58,6 +58,7 @@ def load(name):
 def lake_name(props):
     """Turkish lake names in Natural Earth often lack the generic word ('Van' for Lake Van)."""
     tr = props.get("name_tr") or props.get("name") or ""
+    # Turkish words: "göl" lake, "gölet" pond, "baraj" dam; "Baraj Gölü" reservoir, "Gölü" lake (suffix)
     if tr and not any(w in tr.lower() for w in ("göl", "baraj", "gölet")):
         tr += " Baraj Gölü" if props.get("featurecla") == "Reservoir" else " Gölü"
     return {"tr": tr, "en": props.get("name") or props.get("name_en") or ""}
