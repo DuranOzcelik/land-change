@@ -1899,7 +1899,7 @@
     const decisions = ["Groups", "Confidence", "Scale", "Season", "Clouds", "Prior"].map((k) => `
       <div><p class="subhead">${esc(t(`decision${k}`))}</p><p>${esc(t(`decision${k}Text`))}</p>
       ${k === "Groups" ? `<ul class="group-list">${groups}</ul>` : ""}</div>`).join("");
-    const limits = ["Estimate", "Scale", "Classes", "Europe", "Dates", "Window", "Season", "Basemap"]
+    const limits = ["Estimate", "Scale", "Classes", "Europe", "Dates", "Window", "Season", "Basemap", "Privacy"]
       .map((k) => `<li>${esc(t(`limit${k}`))}</li>`).join("");
     return `
       <p class="lead">${esc(t("aboutIntro"))}</p>
