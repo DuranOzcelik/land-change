@@ -375,6 +375,7 @@
     document.querySelectorAll("#mode button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === mode)));
     $("fields-now").hidden = mode !== "now";
     $("fields-change").hidden = mode !== "change";
+    closeDates();
     $("run").textContent = t(mode === "now" ? "runNow" : "runChange");
   }
   $("mode").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setMode(b.dataset.mode); });
@@ -391,7 +392,83 @@
 
   // Default "after" year: the last summer that has already happened.
   const today = new Date();
-  $("after").value = String(today.getMonth() >= 7 ? today.getFullYear() : today.getFullYear() - 1);
+  const lastSummer = today.getMonth() >= 7 ? today.getFullYear() : today.getFullYear() - 1;
+  $("after").value = String(lastSummer);
+
+  /* ------------------------------------------------------------------ available dates */
+
+  const datesCache = new Map();
+  let datesAbort = null;
+
+  function closeDates() {
+    if (datesAbort) datesAbort.abort();
+    document.querySelectorAll(".date-list").forEach((l) => { l.hidden = true; l.innerHTML = ""; });
+    document.querySelectorAll("[data-dates]").forEach((b) => b.setAttribute("aria-expanded", "false"));
+  }
+
+  async function fetchDates(year) {
+    const key = `${state.place.lat.toFixed(4)},${state.place.lon.toFixed(4)},${year}`;
+    if (datesCache.has(key)) return datesCache.get(key);
+    datesAbort = new AbortController();
+    const params = new URLSearchParams({ lat: state.place.lat.toFixed(5), lon: state.place.lon.toFixed(5), year });
+    const res = await fetch(`${API}/api/dates?${params}`, { signal: datesAbort.signal });
+    if (!res.ok) throw new Error(t("errNetwork"));
+    const { dates } = await res.json();
+    datesCache.set(key, dates);
+    return dates;
+  }
+
+  async function openDates(button) {
+    const id = button.dataset.dates;
+    const input = $(id), list = $(`dates-${id}`);
+    const wasOpen = !list.hidden;
+    closeDates();
+    if (wasOpen) return;
+    if (!state.place) return setStatus(t("pickFirst"), true);
+
+    const show = (html) => { list.innerHTML = html; list.hidden = false; button.setAttribute("aria-expanded", "true"); };
+    const typed = input.value.trim().match(/^(\d{4})/);
+    const year = typed ? Number(typed[1]) : lastSummer;
+    if (year < 2015 || year > today.getFullYear()) {
+      return show(`<p class="empty">${esc(t("datesYear").replace("{max}", today.getFullYear()))}</p>`);
+    }
+    show(`<p class="empty">${esc(t("datesLoading"))}</p>`);
+    try {
+      const dates = await fetchDates(year);
+      if (list.hidden) return;
+      if (!dates.length) return show(`<p class="empty">${esc(t("datesEmpty"))}</p>`);
+      show(`<ul aria-label="${esc(t("datesList").replace("{year}", year))}">${dates.map((d) => `
+        <li><button type="button" data-date="${esc(d.date)}" aria-current="${d.date === input.value.trim()}">
+          <span>${esc(d.date)}</span><small>${esc(t("cloud").replace("{n}", num(d.cloud)))}</small></button></li>`).join("")}</ul>`);
+      (list.querySelector('[aria-current="true"]') || list.querySelector("button")).focus();
+    } catch (err) {
+      if (err.name !== "AbortError") show(`<p class="empty error">${esc(err instanceof TypeError ? t("errNetwork") : err.message)}</p>`);
+    }
+  }
+
+  document.querySelectorAll("[data-dates]").forEach((b) => b.addEventListener("click", () => openDates(b)));
+  document.querySelectorAll(".date-list").forEach((list) => {
+    const input = $(list.id.replace("dates-", ""));
+    list.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-date]");
+      if (!b) return;
+      input.value = b.dataset.date;
+      closeDates();
+      input.focus();
+    });
+    list.addEventListener("keydown", (e) => {
+      const buttons = [...list.querySelectorAll("button")];
+      const i = buttons.indexOf(document.activeElement);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        buttons[Math.min(buttons.length - 1, Math.max(0, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus();
+      } else if (e.key === "Escape") {
+        closeDates();
+        document.querySelector(`[data-dates="${input.id}"]`).focus();
+      }
+    });
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".field")) closeDates(); });
 
   function setStatus(message, isError = false) {
     const el = $("status");

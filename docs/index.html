@@ -55,13 +55,26 @@
         </div>
 
         <div class="fields" id="fields-now">
-          <label><span data-i18n="when"></span>
+          <div class="field">
+            <div class="field-head"><label for="when" data-i18n="when"></label>
+              <button type="button" class="text-button" data-dates="when" aria-expanded="false" aria-controls="dates-when" data-i18n="datesButton"></button></div>
             <input id="when" type="text" inputmode="numeric" data-i18n-placeholder="latest">
-          </label>
+            <div class="date-list" id="dates-when" hidden></div>
+          </div>
         </div>
         <div class="fields two" id="fields-change" hidden>
-          <label><span data-i18n="before"></span><input id="before" type="text" inputmode="numeric" value="2016"></label>
-          <label><span data-i18n="after"></span><input id="after" type="text" inputmode="numeric"></label>
+          <div class="field">
+            <div class="field-head"><label for="before" data-i18n="before"></label>
+              <button type="button" class="text-button" data-dates="before" aria-expanded="false" aria-controls="dates-before" data-i18n="datesButton"></button></div>
+            <input id="before" type="text" inputmode="numeric" value="2016">
+            <div class="date-list" id="dates-before" hidden></div>
+          </div>
+          <div class="field">
+            <div class="field-head"><label for="after" data-i18n="after"></label>
+              <button type="button" class="text-button" data-dates="after" aria-expanded="false" aria-controls="dates-after" data-i18n="datesButton"></button></div>
+            <input id="after" type="text" inputmode="numeric">
+            <div class="date-list" id="dates-after" hidden></div>
+          </div>
         </div>
         <p class="hint" data-i18n="dateHelp"></p>
 

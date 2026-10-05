@@ -183,8 +183,33 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 .options[hidden] { display: none; }
 .hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 .hint.place { color: var(--ink); font-weight: 500; }
-.label, .fields label span, .size span { display: block; font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+.label, .field-head label, .size span { display: block; font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
 .fields.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { position: relative; min-width: 0; }
+.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.text-button {
+  border: 0; background: none; padding: 2px 0; margin-bottom: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--ink); text-decoration: underline; text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.text-button[aria-expanded="true"] { text-decoration-thickness: 2px; }
+.date-list {
+  position: absolute; z-index: 5; left: 0; top: calc(100% + 6px); width: max(100%, 240px); padding: 6px;
+  background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), var(--shadow);
+  max-height: 280px; overflow: auto;
+}
+.fields.two .field:last-child .date-list { left: auto; right: 0; }
+.date-list[hidden] { display: none; }
+.date-list ul { margin: 0; padding: 0; list-style: none; }
+.date-list button {
+  width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 10px;
+  border: 0; border-radius: var(--r-field); background: none; cursor: pointer; text-align: left;
+  color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.date-list button small { color: var(--muted); font-size: 13px; }
+.date-list button:hover, .date-list button:focus-visible, .date-list button[aria-current="true"] { background: var(--wash); }
+.date-list .empty { margin: 0; padding: 8px 10px; font-size: 14px; color: var(--muted); }
+.date-list .empty.error { color: var(--danger); }
 .fields[hidden] { display: none; }
 .row { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; }
 .status { margin: 0; font-size: 14px; color: var(--muted); }
