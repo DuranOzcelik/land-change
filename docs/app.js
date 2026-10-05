@@ -49,6 +49,8 @@
     document.title = t("title");
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll("[data-i18n-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nLabel)); });
+    if (dialog.open && view) openView(view);
     $("run").textContent = t(RUN_LABEL[state.mode]);
     $("date-help").textContent = t(state.mode === "time" ? "timeHelp" : "dateHelp");
     $("theme").textContent = `${t("theme")}: ${t(state.theme)}`;
@@ -1287,6 +1289,137 @@
     }
   });
   addEventListener("resize", applySheet);
+
+  /* ------------------------------------------------------------------ dialog views */
+
+  // Rankings, stories and the "how it works" page share one modal dialog.
+  const dialog = $("dialog");
+  let view = null;
+  const VIEWS = { rankings: renderRankings };
+  const jsonCache = new Map();
+
+  async function loadJson(url) {
+    if (!jsonCache.has(url)) {
+      jsonCache.set(url, fetch(url).then((r) => { if (!r.ok) throw new Error(url); return r.json(); }));
+    }
+    try { return await jsonCache.get(url); } catch (err) { jsonCache.delete(url); throw err; }
+  }
+
+  async function openView(name) {
+    view = name;
+    $("dialog-title").textContent = t(`${name}Title`);
+    const body = $("dialog-body");
+    body.innerHTML = `<p class="meta">${esc(t("loadingData"))}</p>`;
+    if (!dialog.open) dialog.showModal();
+    try {
+      body.innerHTML = await VIEWS[name]();
+    } catch {
+      body.innerHTML = `<p class="notice">${esc(t("errData"))}</p>`;
+    }
+    body.scrollTop = 0;
+  }
+
+  $("explore").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-view]");
+    if (b) openView(b.dataset.view);
+  });
+  $("dialog-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });   // backdrop
+  dialog.addEventListener("close", () => { view = null; });
+
+  const countryName = (code) => {
+    try { return new Intl.DisplayNames([state.lang], { type: "region" }).of(code); } catch { return code; }
+  };
+
+  /* ------------------------------------------------------------------ city rankings */
+
+  const rankView = { sort: "built_change_pts", dir: -1, country: "" };
+
+  async function renderRankings() {
+    const data = await loadJson("data/rankings.json");
+    const p = data.params;
+    const all = [...data.cities, ...data.unavailable];
+    const countries = [...new Set(all.map((c) => c.country))]
+      .sort((a, b) => countryName(a).localeCompare(countryName(b), state.lang));
+    const reason = (c) => {
+      if (c.reason === "unusable") return t("reasonUnusable").replace("{a}", pct(c.unusable_share[0])).replace("{b}", pct(c.unusable_share[1]));
+      if (c.reason === "season") return t("reasonSeason").replace("{n}", num(c.season_gap_days, 0));
+      return t({ no_imagery: "reasonNoImagery", invalid: "reasonInvalid" }[c.reason] || "reasonServer");
+    };
+    return `
+      <p class="notice">${esc(t("rankLimits"))}</p>
+      <p class="meta">${esc(t("rankMethod").replace("{before}", p.before).replace("{after}", p.after)
+        .replace("{size}", p.size_km).replace("{cell}", p.cell_m)
+        .replace("{unusable}", num(p.max_unusable)).replace("{gap}", p.max_season_gap_days))}
+        ${esc(t("generatedOn").replace("{date}", data.generated))}</p>
+      ${data.complete ? "" : `<p class="notice">${esc(t("rankPartial").replace("{n}", all.length))}</p>`}
+      <label class="filter"><span>${esc(t("country"))}</span>
+        <select id="rank-country" class="pill-select">
+          <option value="">${esc(t("allCountries"))}</option>
+          ${countries.map((c) => `<option value="${esc(c)}"${c === rankView.country ? " selected" : ""}>${esc(countryName(c))}</option>`).join("")}
+        </select></label>
+      <div id="ranking-table">${rankingTable(data)}</div>
+      ${data.unavailable.length ? `<div><p class="subhead">${esc(t("rankUnavailable"))}</p>
+        <ul class="unavailable">${data.unavailable.map((c) => `
+          <li><span>${esc(c.name)}, ${esc(countryName(c.country))}</span><span>${esc(reason(c))}</span></li>`).join("")}</ul></div>` : ""}`;
+  }
+
+  function rankingTable(data) {
+    const p = data.params;
+    const rows = data.cities
+      .filter((c) => !rankView.country || c.country === rankView.country)
+      .sort((a, b) => rankView.dir * (a[rankView.sort] - b[rankView.sort]));
+    const sortHead = (key, label) => {
+      const on = rankView.sort === key;
+      return `<th aria-sort="${on ? (rankView.dir < 0 ? "descending" : "ascending") : "none"}">
+        <button type="button" class="sort" data-sort="${key}">${esc(label)}${on ? (rankView.dir < 0 ? " ↓" : " ↑") : ""}</button></th>`;
+    };
+    if (!rows.length) return `<p class="meta">${esc(t("noResults"))}</p>`;
+    return `<table class="rankings">
+      <thead><tr><th>#</th><th>${esc(t("city"))}</th><th>${esc(p.before)}</th><th>${esc(p.after)}</th>
+        ${sortHead("built_change_pts", t("rankGain"))}${sortHead("built_km2", t("rankKm2"))}</tr></thead>
+      <tbody>${rows.map((c, i) => `
+        <tr data-city="${data.cities.indexOf(c)}">
+          <td>${i + 1}</td>
+          <td><button type="button" class="row-link" data-city="${data.cities.indexOf(c)}">${esc(c.name)}</button>
+            <small>${esc(countryName(c.country))}</small>${c.experimental ? ` <span class="tag">${esc(t("experimental"))}</span>` : ""}</td>
+          <td>${pct(c.built_before)}</td><td>${pct(c.built_after)}</td>
+          <td>${c.built_change_pts > 0 ? "+" : ""}${num(c.built_change_pts)}</td><td>${num(c.built_km2)}</td>
+        </tr>`).join("")}</tbody></table>`;
+  }
+
+  // Opens the change report for a ranked city with the same settings the ranking used.
+  function openCityReport(city, params) {
+    dialog.close();
+    $("size").value = String(params.size_km);
+    setCell(params.cell_m);
+    setMode("change");
+    $("before").value = params.before;
+    $("after").value = params.after;
+    setPlace(city.lat, city.lon, city.name);
+    $("controls").requestSubmit();
+  }
+
+  dialog.addEventListener("click", async (e) => {
+    if (view !== "rankings") return;
+    const data = await loadJson("data/rankings.json");
+    const sort = e.target.closest("button[data-sort]");
+    if (sort) {
+      const key = sort.dataset.sort;
+      rankView.dir = rankView.sort === key ? -rankView.dir : -1;
+      rankView.sort = key;
+      $("ranking-table").innerHTML = rankingTable(data);
+      $("ranking-table").querySelector(`[data-sort="${key}"]`).focus();
+      return;
+    }
+    const row = e.target.closest("[data-city]");
+    if (row) openCityReport(data.cities[Number(row.dataset.city)], data.params);
+  });
+  dialog.addEventListener("change", async (e) => {
+    if (e.target.id !== "rank-country") return;
+    rankView.country = e.target.value;
+    $("ranking-table").innerHTML = rankingTable(await loadJson("data/rankings.json"));
+  });
 
   /* ------------------------------------------------------------------ shareable link */
 

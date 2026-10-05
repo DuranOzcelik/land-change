@@ -114,10 +114,22 @@
           <button class="pill-button small" id="cancel" type="button" data-i18n="cancel" hidden></button>
         </div>
       </form>
+
+      <nav class="explore" id="explore" data-i18n-label="exploreLabel">
+        <button class="pill-button ghost" type="button" data-view="rankings" data-i18n="rankingsTitle"></button>
+      </nav>
     </section>
 
     <section class="card results" id="results" hidden aria-live="polite"></section>
   </main>
+
+  <dialog class="dialog" id="dialog" aria-labelledby="dialog-title">
+    <div class="dialog-head">
+      <h2 id="dialog-title"></h2>
+      <button class="pill-button small" id="dialog-close" type="button" data-i18n="close"></button>
+    </div>
+    <div class="dialog-body" id="dialog-body"></div>
+  </dialog>
 
   <footer class="credit"><span data-i18n="credit"></span></footer>
 

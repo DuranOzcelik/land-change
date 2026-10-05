@@ -13,6 +13,7 @@
   --on-accent: #163300;
   --danger: #cb272f;
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --scrim: rgba(14, 15, 12, 0.45);
 
   --c-agriculture: #e3a72f;
   --c-vegetation: #2f8f4e;
@@ -49,6 +50,7 @@
   --line: rgba(226, 246, 213, 0.18);
   --danger: #ff8b8f;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --scrim: rgba(0, 0, 0, 0.6);
 }
 
 * { box-sizing: border-box; }
@@ -329,6 +331,42 @@ table.years th .swatch { display: inline-block; }
 .range input { flex: 1; accent-color: var(--ink); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ---------- explore links and the shared dialog ---------- */
+.explore { display: flex; flex-wrap: wrap; gap: 8px; }
+.explore .pill-button { font-size: 14px; }
+.dialog {
+  width: min(920px, calc(100% - 48px)); max-height: calc(100dvh - 48px); padding: 0; border: 0;
+  display: flex; flex-direction: column; color: var(--text); background: var(--surface);
+  border-radius: var(--r-card); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+}
+.dialog:not([open]) { display: none; }
+.dialog::backdrop { background: var(--scrim); }
+.dialog-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--line);
+}
+.dialog-head h2 { margin: 0; color: var(--ink); font-size: 26px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
+.dialog-body { overflow: auto; padding: 20px 24px 28px; display: flex; flex-direction: column; gap: 16px; }
+.dialog-body .meta { margin: 0; font-size: 14px; color: var(--muted); }
+.filter { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: var(--ink); }
+
+table.rankings th, table.rankings td { padding-left: 10px; vertical-align: middle; }
+table.rankings th:first-child, table.rankings td:first-child { padding-left: 0; }
+table.rankings th:nth-child(2), table.rankings td:nth-child(2) { text-align: left; }
+table.rankings th { vertical-align: bottom; }
+table.rankings td small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+table.rankings tbody tr { cursor: pointer; }
+table.rankings tbody tr:hover { background: var(--wash); }
+.sort { border: 0; background: none; padding: 0; font: inherit; color: var(--ink); font-weight: 600; cursor: pointer; }
+.row-link { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.tag {
+  display: inline-block; padding: 1px 8px; border-radius: var(--r-pill); background: var(--surface-2);
+  color: var(--ink); font-size: 12px; font-weight: 500;
+}
+.unavailable { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+.unavailable li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.unavailable li span:last-child { color: var(--muted); text-align: right; }
+
 /* ---------- map furniture ---------- */
 .pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px #163300, 0 0 0 5px rgba(255,255,255,.9); }
 .credit {
@@ -348,6 +386,11 @@ table.years th .swatch { display: inline-block; }
   .stage { z-index: auto; }   /* no stacking context, so the fixed sheet can rise above the map */
   .segmented.small button { padding: 6px 8px; }
   .legend { left: 8px; bottom: 8px; max-width: calc(100% - 16px); }
+  .dialog { width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; border-radius: 0; }
+  .dialog-head { padding: 14px 16px 12px; }
+  .dialog-head h2 { font-size: 22px; }
+  .dialog-body { padding: 16px 16px 24px; }
+  table.rankings { font-size: 13px; }
   .map-year { top: 60px; left: auto; right: 8px; font-size: 32px; padding: 0 12px; border-radius: 12px; }
   .topbar { padding: 12px 16px; }
   .stage { position: relative; inset: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }
