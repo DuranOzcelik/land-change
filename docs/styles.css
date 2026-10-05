@@ -363,6 +363,18 @@ table.rankings tbody tr:hover { background: var(--wash); }
   display: inline-block; padding: 1px 8px; border-radius: var(--r-pill); background: var(--surface-2);
   color: var(--ink); font-size: 12px; font-weight: 500;
 }
+.stories { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.story { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: start; padding: 12px; border-radius: 20px; background: var(--surface-2); }
+.story img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; background: var(--line); }
+.story p { margin: 4px 0 0; font-size: 14px; }
+.story-open {
+  border: 0; background: none; padding: 0; text-align: left; cursor: pointer;
+  font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.sources { font-size: 13px; color: var(--muted); }
+.sources a, .story-text a { color: var(--ink); }
+.story-text p { margin: 0 0 6px; font-size: 14px; }
 .unavailable { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
 .unavailable li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 .unavailable li span:last-child { color: var(--muted); text-align: right; }
@@ -391,6 +403,7 @@ table.rankings tbody tr:hover { background: var(--wash); }
   .dialog-head h2 { font-size: 22px; }
   .dialog-body { padding: 16px 16px 24px; }
   table.rankings { font-size: 13px; }
+  .stories { grid-template-columns: 1fr; }
   .map-year { top: 60px; left: auto; right: 8px; font-size: 32px; padding: 0 12px; border-radius: 12px; }
   .topbar { padding: 12px 16px; }
   .stage { position: relative; inset: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }

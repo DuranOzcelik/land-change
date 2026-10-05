@@ -56,6 +56,10 @@
     $("theme").textContent = `${t("theme")}: ${t(state.theme)}`;
     $("split-handle").setAttribute("aria-label", t("slider"));
     if (stageKey) setStage(stageKey);
+    if (state.data && state.data.story) {
+      state.data.label = storyTitle(state.data.story);
+      if (state.place) state.place.label = state.data.label;
+    }
     showPlaceLine();
     if (state.data) renderResults();
   }
@@ -956,6 +960,7 @@
       <div class="sheet-body" id="sheet-body">
       <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${esc(t("totalArea"))}: ${num(a.stats.total_km2, 0)} km²<br>
         ${esc(t("changedTotal"))}: ${num(body.changed_km2)} km²</p>
+      ${state.data.story ? storyBlock(state.data.story) : ""}
       ${notices(a, b)}
       <div><p class="subhead">${esc(t("layer"))}</p>
         <div class="segmented small" id="layer">${["split", "before", "after", "change"].map(layerButton).join("")}</div>
@@ -1153,6 +1158,12 @@
   results.addEventListener("focusin", (e) => { if (e.target.id === "chart") showTip(state.timeYear); });
   results.addEventListener("focusout", (e) => { if (e.target.id === "chart") $("chart-tip").hidden = true; });
 
+  function storyBlock(story) {
+    const text = story.description[state.lang] || "";
+    const html = `${text ? `<p>${esc(text)}</p>` : ""}${storySources(story)}`;
+    return html ? `<div class="story-text">${html}</div>` : "";
+  }
+
   // Entries the current layer does not draw are dimmed rather than removed.
   function renderLegend(mode, changeLayer) {
     const legend = $("legend");
@@ -1295,7 +1306,7 @@
   // Rankings, stories and the "how it works" page share one modal dialog.
   const dialog = $("dialog");
   let view = null;
-  const VIEWS = { rankings: renderRankings };
+  const VIEWS = { rankings: renderRankings, stories: renderStories };
   const jsonCache = new Map();
 
   async function loadJson(url) {
@@ -1421,6 +1432,67 @@
     $("ranking-table").innerHTML = rankingTable(await loadJson("data/rankings.json"));
   });
 
+  /* ------------------------------------------------------------------ stories */
+
+  // Ready-made reports: the API response is saved in docs/data/stories, so they open without waiting.
+  const storyTitle = (story) => story.title[state.lang] || story.title.en;
+  const safeUrl = (url) => (/^https?:\/\//.test(url) ? url : null);
+
+  function storySources(story) {
+    const links = (story.sources || []).filter((s) => safeUrl(s.url))
+      .map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a>`);
+    return links.length ? `<p class="sources">${esc(t("sources"))}: ${links.join(", ")}</p>` : "";
+  }
+
+  async function renderStories() {
+    const { stories } = await loadJson("data/stories.json");
+    return `
+      <p class="meta">${esc(t("storiesIntro"))}</p>
+      <ul class="stories">${stories.map((s) => {
+        const text = s.description[state.lang] || "";
+        return `<li class="story">
+          <img src="data/stories/${esc(s.id)}-after.jpg" alt="" loading="lazy" width="320" height="320">
+          <div>
+            <button type="button" class="story-open" data-story="${esc(s.id)}">${esc(storyTitle(s))}</button>
+            <p class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km</p>
+            ${text ? `<p>${esc(text)}</p>` : ""}
+            ${storySources(s)}
+          </div></li>`;
+      }).join("")}</ul>`;
+  }
+
+  async function openStory(id) {
+    const { stories } = await loadJson("data/stories.json");
+    const story = stories.find((s) => s.id === id);
+    if (!story) return false;
+    const body = await loadJson(`data/stories/${encodeURIComponent(id)}.json`);
+    if (dialog.open) dialog.close();
+    stopPlaying();
+    const { lat, lon, size_km: size, cell_m: cell } = story.location;
+    $("size").value = String(size);
+    setCell(cell);
+    setMode("change");
+    $("before").value = story.dates.before;
+    $("after").value = story.dates.after;
+    setPlace(lat, lon, storyTitle(story), false);
+    state.data = { mode: "change", body, label: storyTitle(story), story };
+    state.layer = "split";
+    sheetOpen = false;
+    setStatus("");
+    $("results").hidden = false;
+    centreSplit();
+    renderResults();
+    const link = new URLSearchParams({ lat: lat.toFixed(5), lon: lon.toFixed(5), size_km: size, cell_m: cell,
+      before: story.dates.before, after: story.dates.after, story: id });
+    updateLink(link);
+    return true;
+  }
+
+  dialog.addEventListener("click", (e) => {
+    const b = view === "stories" && e.target.closest("[data-story]");
+    if (b) openStory(b.dataset.story).catch(() => setStatus(t("errData"), true));
+  });
+
   /* ------------------------------------------------------------------ shareable link */
 
   function updateLink(params) {
@@ -1440,7 +1512,9 @@
     setMode(["change", "time"].includes(p.get("mode")) ? p.get("mode") : "now");
     ["when", "before", "after", "start", "end"].forEach((k) => { if (p.get(k)) $(k).value = p.get(k); });
     setPlace(lat, lon, p.get("q") || `${lat.toFixed(3)}, ${lon.toFixed(3)}`);
-    $("controls").requestSubmit();
+    // A story link opens the saved report; if that fails, run the analysis as usual.
+    if (p.get("story")) openStory(p.get("story")).then((ok) => { if (!ok) $("controls").requestSubmit(); }, () => $("controls").requestSubmit());
+    else $("controls").requestSubmit();
   }
 
   /* ------------------------------------------------------------------ start */
