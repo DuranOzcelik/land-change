@@ -108,6 +108,14 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
   background: var(--surface); border-radius: var(--r-field); box-shadow: 0 0 0 1px var(--line);
 }
 .legend[hidden] { display: none; }
+
+/* Current year of the time-lapse, large in the map corner beside the left panel. */
+.map-year {
+  position: absolute; top: 84px; left: 448px; z-index: 2; padding: 2px 16px; pointer-events: none;
+  font-weight: 900; font-size: 56px; line-height: 1.1; letter-spacing: -0.035em; color: var(--ink);
+  font-variant-numeric: tabular-nums; background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--line);
+}
+.map-year[hidden] { display: none; }
 .legend li { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .legend .swatch { width: 10px; height: 10px; }
 .legend li[data-key="lowconf"] { white-space: normal; align-items: flex-start; }
@@ -311,6 +319,12 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 .chart-tip .row b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
 table.years th .swatch { display: inline-block; }
 
+.player { display: flex; align-items: center; gap: 12px; }
+.player[hidden] { display: none; }
+.player input[type="range"] { flex: 1; min-width: 0; accent-color: var(--ink); }
+.player .speed { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); }
+.player .pill-select { padding: 5px 10px; font-size: 14px; }
+
 .range { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--ink); }
 .range input { flex: 1; accent-color: var(--ink); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -334,6 +348,7 @@ table.years th .swatch { display: inline-block; }
   .stage { z-index: auto; }   /* no stacking context, so the fixed sheet can rise above the map */
   .segmented.small button { padding: 6px 8px; }
   .legend { left: 8px; bottom: 8px; max-width: calc(100% - 16px); }
+  .map-year { top: 60px; left: auto; right: 8px; font-size: 32px; padding: 0 12px; border-radius: 12px; }
   .topbar { padding: 12px 16px; }
   .stage { position: relative; inset: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }
   .wordmark { font-size: 17px; padding: 6px 12px; }

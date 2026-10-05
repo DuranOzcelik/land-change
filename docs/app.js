@@ -506,6 +506,7 @@
 
   $("controls").addEventListener("submit", async (e) => {
     e.preventDefault();
+    stopPlaying();
     if (!state.place) return setStatus(t("pickFirst"), true);
 
     const params = new URLSearchParams({
@@ -584,6 +585,7 @@
     for (let y = start; y <= end; y++) years.push(y);
     // points[year]: a layer, null for a gap (no image or failed), undefined while pending.
     const series = { years, points: {}, missing: [], failed: [] };
+    stopPlaying();
     state.data = { mode: "time", body: series, label: state.place.label };
     state.timeYear = null;
     sheetOpen = false;
@@ -649,7 +651,10 @@
       } else {
         setStatus("");
       }
-      if (state.data && state.data.body === series) updateTimeline();
+      if (state.data && state.data.body === series) {
+        updateTimeline();
+        if (!signal.aborted && !reducedMotion && loadedYears(series).length > 1) play(true);
+      }
     }
   }
 
@@ -667,6 +672,7 @@
     $("timeline").innerHTML = timelineHtml(body);
     $("time-color").innerHTML = state.timeYear ? colorControl(body.points[state.timeYear]) : "";
     if (focused === "chart") $("chart").focus();
+    syncPlayer();
     if (state.timeYear !== state.data.paintedYear) {
       state.data.paintedYear = state.timeYear;
       const side = showOnMap();
@@ -684,6 +690,80 @@
     updateTimeline();
     if (announce) $("chart-live").textContent = yearSummary(year);
   }
+
+  /* ------------------------------------------------------------------ time-lapse */
+
+  // Plays the loaded years on the map. With reduced motion there is no playback, only the slider.
+  const SPEEDS = [0.5, 1, 2];
+  const FRAME_MS = 1200;
+  let playTimer = null;
+  let speed = 1;
+
+  function playerHtml() {
+    const controls = reducedMotion ? "" : `
+      <button class="pill-button small" id="play" type="button" aria-pressed="false">${esc(t("play"))}</button>`;
+    const speeds = reducedMotion ? "" : `
+      <label class="speed"><span>${esc(t("speed"))}</span>
+        <select id="speed" class="pill-select">${SPEEDS.map((v) => `<option value="${v}"${v === speed ? " selected" : ""}>${num(v)}×</option>`).join("")}</select></label>`;
+    return `<div class="player" id="player" hidden>${controls}
+      <input id="year-slider" type="range" min="0" max="0" step="1" value="0" aria-label="${esc(t("year"))}">
+      ${speeds}</div>`;
+  }
+
+  function syncPlayer() {
+    const player = $("player");
+    if (!player) return;
+    const loaded = loadedYears(state.data.body);
+    player.hidden = loaded.length < 2;
+    const slider = $("year-slider");
+    slider.max = String(Math.max(0, loaded.length - 1));
+    slider.value = String(Math.max(0, loaded.indexOf(state.timeYear)));
+    slider.setAttribute("aria-valuetext", String(state.timeYear ?? ""));
+    const button = $("play");
+    if (button) {
+      button.textContent = t(playTimer ? "pause" : "play");
+      button.setAttribute("aria-pressed", String(Boolean(playTimer)));
+    }
+  }
+
+  function step() {
+    const loaded = loadedYears(state.data.body);
+    const i = loaded.indexOf(state.timeYear);
+    selectYear(loaded[(i + 1) % loaded.length], false);
+    playTimer = setTimeout(step, FRAME_MS / speed);
+    syncPlayer();
+  }
+
+  function play(fromStart) {
+    if (reducedMotion || !state.data || state.data.mode !== "time") return;
+    stopPlaying();
+    if (fromStart) selectYear(loadedYears(state.data.body)[0], false);
+    playTimer = setTimeout(step, FRAME_MS / speed);
+    syncPlayer();
+  }
+
+  function stopPlaying() {
+    clearTimeout(playTimer);
+    playTimer = null;
+    if (state.data && state.data.mode === "time") syncPlayer();
+  }
+
+  $("results").addEventListener("click", (e) => {
+    if (e.target.id === "play") (playTimer ? stopPlaying : play)(false);
+    else if (e.target.closest("#chart")) stopPlaying();
+  });
+  $("results").addEventListener("input", (e) => {
+    if (e.target.id !== "year-slider") return;
+    const year = loadedYears(state.data.body)[Number(e.target.value)];   // read before stopPlaying resyncs the slider
+    stopPlaying();
+    selectYear(year, false);
+  });
+  $("results").addEventListener("change", (e) => {
+    if (e.target.id !== "speed") return;
+    speed = Number(e.target.value);
+    if (playTimer) play(false);
+  });
+  $("results").addEventListener("keydown", (e) => { if (e.target.id === "chart") stopPlaying(); });
 
   function yearSummary(year) {
     const layer = state.data.body.points[year];
@@ -744,10 +824,19 @@
     return big;
   }
 
+  // Encoded overlays are cached per layer, colouring and theme, so the animation does not redraw them.
+  const overlayCache = new WeakMap();
+  function overlayUrl(side, changed) {
+    const key = `${changed ? "changed" : state.color}|${state.theme}`;
+    if (!overlayCache.has(side)) overlayCache.set(side, new Map());
+    const cache = overlayCache.get(side);
+    if (!cache.has(key)) cache.set(key, gridCanvas(side, changed).toDataURL());
+    return cache.get(key);
+  }
+
   function paintSide(target, side, changed) {
-    const overlay = gridCanvas(side, changed);
     setImage(target, "scene", side.image.src, side.image.corners, { "raster-fade-duration": 0 });
-    setImage(target, "cells", overlay.toDataURL(), side.grid.corners,
+    setImage(target, "cells", overlayUrl(side, changed), side.grid.corners,
       { "raster-opacity": state.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 });
     target.setPaintProperty("cells", "raster-opacity", state.opacity);
   }
@@ -755,10 +844,12 @@
   // In split view the main map holds the earlier date and the clipped map the later one.
   function showOnMap() {
     const { mode, body } = state.data;
+    $("map-year").hidden = mode !== "time" || !body.points[state.timeYear];
     if (mode === "time") {
       const side = body.points[state.timeYear];
       setSplit(false);
       if (!side) return null;
+      $("map-year").textContent = state.timeYear;
       paintSide(map, side, null);
       renderLegend(mode, false);
       document.querySelectorAll("#color button").forEach((b) => { b.disabled = false; });
@@ -886,6 +977,7 @@
       ${sheetHead(`<div id="time-figure"></div>`)}
       <div class="sheet-body" id="sheet-body">
         <div id="timeline"></div>
+        ${playerHtml()}
         <div id="time-color"></div>
         ${opacityControl()}
         ${footer()}
