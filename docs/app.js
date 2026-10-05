@@ -26,7 +26,7 @@
 
   const state = {
     lang: store.get("lang") || ((navigator.language || "en").toLowerCase().startsWith("tr") ? "tr" : "en"),
-    theme: store.get("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+    theme: store.get("theme") || "dark",
     place: null,          // { lat, lon, label }
     mode: "now",          // "now" | "change" | "time"
     cell: 640,
@@ -79,7 +79,7 @@
     projection: { type: "globe" },
     sources: { sat: { type: "raster", tiles: [BASEMAP], tileSize: 256, maxzoom: 14 } },
     layers: [
-      { id: "ocean", type: "background", paint: { "background-color": "#0b2942" } },
+      { id: "ocean", type: "background", paint: { "background-color": "#06192c" } },
       { id: "sat", type: "raster", source: "sat" },
     ],
     sky: { "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0] },
@@ -93,6 +93,93 @@
     dragRotate: false,
   });
   map.touchZoomRotate.disableRotation();
+
+  /* ------------------------------------------------------------------ night sky */
+
+  // Stars sit on a sky sphere (fixed seed, dots only) that turns with the globe camera at SKY_TURN
+  // of its speed, so it reads as a far background, drawn in perspective. Three depth layers drift
+  // with the mouse: bright (near) stars move most. With reduced motion the stars still follow the
+  // globe, which the visitor moves, but do not drift.
+  const SKY_TURN = 0.35;            // share of the globe's rotation the sky follows
+  const FOCAL = 1100;               // sky camera focal length in CSS px: same star density on every screen
+  const DRIFT = [5, 12, 24];        // px of pointer drift per depth layer (far to near)
+  const sky = (() => {
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const out = [];
+    for (let i = 0; i < 14000; i++) {
+      const z = rnd() * 2 - 1, a = rnd() * Math.PI * 2, r = Math.sqrt(1 - z * z);
+      const big = rnd() > 0.96;
+      out.push({
+        v: [r * Math.cos(a), r * Math.sin(a), z], depth: big ? 2 : rnd() > 0.7 ? 1 : 0,
+        alpha: 0.35 + rnd() * (big ? 0.65 : 0.55), tint: Math.floor(rnd() * 5),
+        size: big ? 1.4 + rnd() * 1.1 : 0.5 + rnd() * 0.8,
+      });
+    }
+    return out;
+  })();
+  const starCanvas = $("stars");
+  const starCtx = starCanvas.getContext("2d");
+  const drift = { x: 0, y: 0, tx: 0, ty: 0 };
+  const startZoom = map.getZoom();
+  let starTints = [], starFrame = 0, starDpr = 1;
+
+  function sizeStars() {
+    starDpr = devicePixelRatio || 1;
+    starCanvas.width = starCanvas.clientWidth * starDpr;
+    starCanvas.height = starCanvas.clientHeight * starDpr;
+    starTints = ["--star", "--star", "--star", "--star-warm", "--star-cool"].map(cssVar);
+    drawStars();
+  }
+
+  function drawStars() {
+    starFrame = 0;
+    const W = starCanvas.width, H = starCanvas.height, ctx = starCtx;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = cssVar("--space");
+    ctx.fillRect(0, 0, W, H);
+    const zoom = map.getZoom();
+    if (zoom < 6) {   // closer in, the globe fills the screen
+      const c = map.getCenter(), rad = (SKY_TURN * Math.PI) / 180;
+      const lon = c.lng * rad, lat = c.lat * rad;
+      const f = [-Math.cos(lat) * Math.cos(lon), -Math.cos(lat) * Math.sin(lon), -Math.sin(lat)];   // forward
+      const r = [-Math.sin(lon), Math.cos(lon), 0];                                                    // right
+      const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];  // up
+      // Zooming in narrows the view a little, so the sky spreads out gently.
+      const focal = FOCAL * starDpr * Math.pow(2, 0.12 * (zoom - startZoom));
+      const minDepth = Math.cos(Math.atan(Math.hypot(W, H) / 2 / focal) + 0.2);
+      for (const s of sky) {
+        const d = s.v[0] * f[0] + s.v[1] * f[1] + s.v[2] * f[2];
+        if (d < minDepth) continue;
+        const shift = DRIFT[s.depth] * starDpr;
+        const x = W / 2 + ((s.v[0] * r[0] + s.v[1] * r[1] + s.v[2] * r[2]) / d) * focal - drift.x * shift;
+        const y = H / 2 - ((s.v[0] * u[0] + s.v[1] * u[1] + s.v[2] * u[2]) / d) * focal - drift.y * shift;
+        if (x < -4 || y < -4 || x > W + 4 || y > H + 4) continue;
+        ctx.globalAlpha = s.alpha;
+        ctx.fillStyle = starTints[s.tint];
+        ctx.beginPath();
+        ctx.arc(x, y, s.size * starDpr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    // Ease the drift; keep animating only while it is still settling.
+    drift.x += (drift.tx - drift.x) * 0.08;
+    drift.y += (drift.ty - drift.y) * 0.08;
+    if (Math.abs(drift.tx - drift.x) + Math.abs(drift.ty - drift.y) > 0.001) requestStars();
+  }
+  const requestStars = () => { if (!starFrame) starFrame = requestAnimationFrame(drawStars); };
+
+  new ResizeObserver(sizeStars).observe(starCanvas);
+  map.on("move", requestStars);
+  if (!reducedMotion) {
+    addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse" || scrollY > innerHeight) return;
+      drift.tx = e.clientX / innerWidth - 0.5;
+      drift.ty = e.clientY / innerHeight - 0.5;
+      requestStars();
+    }, { passive: true });
+  }
 
   const padding = () => {
     if (!wide()) return { top: 24, bottom: 24, left: 24, right: 24 };

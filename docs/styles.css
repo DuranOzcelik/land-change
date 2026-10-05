@@ -34,22 +34,33 @@
   --c-SeaLake: #0072b2;
   --c-River: #56b4e9;
 
+  /* Space backdrop behind the globe, the same in both themes. Text placed straight on the
+     night sky (the hero on wide screens) uses the on-space colours. */
+  --space: #03050a;
+  --star: #ffffff;
+  --star-warm: #fff1d2;
+  --star-cool: #d6e8ff;
+  --on-space-ink: #e2f6d5;
+  --on-space-text: #c3d3bb;
+
   --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --r-card: 28px;
   --r-field: 10px;
   --r-pill: 9999px;
 }
+/* Dark: the forest-and-lime identity moved onto the night sky. */
 :root[data-theme="dark"] {
-  --bg: #0d2100;
-  --surface: #163300;
-  --surface-2: #204608;
-  --wash: #1b3d04;
+  --bg: #03050a;
+  --surface: #0a120d;
+  --surface-2: #142219;
+  --wash: #183319;
   --ink: #e2f6d5;
-  --text: #d3e2ca;
-  --muted: #9db391;
-  --line: rgba(226, 246, 213, 0.18);
+  --text: #c3d3bb;
+  --muted: #8da38f;
+  --line: rgba(226, 246, 213, 0.16);
+  --on-accent: #0d2100;
   --danger: #ff8b8f;
-  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --shadow: none;
 }
 
 * { box-sizing: border-box; }
@@ -70,8 +81,10 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.map-wrap { position: absolute; top: 0; left: 0; right: 0; height: 100vh; z-index: 0; overflow: hidden; }
-#map, #map-after { position: absolute; inset: 0; background: var(--bg); }
+.map-wrap { position: absolute; top: 0; left: 0; right: 0; height: 100vh; height: 100svh; z-index: 0; overflow: hidden; background: var(--space); }
+/* Stars sit behind the transparent map canvases; app.js draws them. */
+#stars { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#map, #map-after { position: absolute; inset: 0; background: transparent; }
 #map-after[hidden] { display: none; }
 #map-after, #map-after * { pointer-events: none; }
 .maplibregl-ctrl-attrib { display: none; }
@@ -172,7 +185,7 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 
 /* ---------- layout ---------- */
 .stage {
-  position: absolute; top: 68px; left: 0; right: 0; height: calc(100vh - 108px); z-index: 2;
+  position: absolute; top: 68px; left: 0; right: 0; height: calc(100vh - 108px); height: calc(100svh - 108px); z-index: 2;
   display: flex; justify-content: space-between; align-items: flex-start; gap: 24px;
   padding: 8px 24px 0; pointer-events: none;
 }
@@ -180,11 +193,11 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 .left > *, .results { pointer-events: auto; }
 
 .hero h1 {
-  margin: 0; color: var(--ink); font-weight: 900;
+  margin: 0; color: var(--on-space-ink); font-weight: 900;
   font-size: clamp(44px, 5vw, 72px); line-height: 0.9; letter-spacing: -0.035em;
   text-wrap: balance;
 }
-.hero p { margin: 16px 0 0; max-width: 34ch; color: var(--text); font-size: 18px; }
+.hero p { margin: 16px 0 0; max-width: 34ch; color: var(--on-space-text); font-size: 18px; }
 .hero[hidden] { display: none; }
 
 .card {
@@ -344,7 +357,7 @@ table.years th .swatch { display: inline-block; }
 
 /* ---------- sections below the map ---------- */
 .scroll-cue {
-  position: absolute; top: calc(100vh - 38px); right: 24px; z-index: 2;
+  position: absolute; top: calc(100vh - 38px); top: calc(100svh - 38px); right: 24px; z-index: 2;
   display: flex; align-items: center; gap: 8px; padding: 6px 16px; border: 0; cursor: pointer;
   font-size: 13px; font-weight: 500; color: var(--ink); background: var(--surface);
   border-radius: var(--r-pill); box-shadow: 0 0 0 1px var(--line); white-space: nowrap;
@@ -353,7 +366,7 @@ table.years th .swatch { display: inline-block; }
   content: ""; width: 7px; height: 7px; margin-top: -3px;
   border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
 }
-.sections { position: relative; z-index: 1; margin-top: 100vh; background: var(--bg); border-top: 1px solid var(--line); }
+.sections { position: relative; z-index: 1; margin-top: 100vh; margin-top: 100svh; background: var(--bg); border-top: 1px solid var(--line); }
 .section { max-width: 1240px; margin: 0 auto; padding: 56px 24px; display: flex; flex-direction: column; gap: 24px; }
 .section + .section { border-top: 1px solid var(--line); }
 .section h2 { margin: 0; color: var(--ink); font-size: clamp(32px, 4vw, 48px); font-weight: 900; letter-spacing: -0.035em; line-height: 1; }
@@ -415,7 +428,7 @@ table.rankings tbody tr:hover { background: var(--wash); }
 .pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px #163300, 0 0 0 5px rgba(255,255,255,.9); }
 .credit {
   /* Anchored to the bottom of the first screen; grows upwards if it wraps. */
-  position: absolute; left: 24px; top: calc(100vh - 8px); transform: translateY(-100%); z-index: 1;
+  position: absolute; left: 24px; top: calc(100vh - 8px); top: calc(100svh - 8px); transform: translateY(-100%); z-index: 1;
   padding: 3px 10px; max-width: 60vw;
   font-size: 12px; color: var(--muted); background: var(--surface); border-radius: var(--r-pill);
   box-shadow: 0 0 0 1px var(--line); pointer-events: none;
@@ -427,7 +440,7 @@ table.rankings tbody tr:hover { background: var(--wash); }
 @media (max-width: 860px) {
   body { overflow: visible; padding-bottom: var(--sheet-peek, 0px); }
   /* The map sits above the scrolling form so the globe always keeps its share of the screen. */
-  .map-wrap { position: sticky; inset: auto; top: 0; height: 46vh; z-index: 3; }
+  .map-wrap { position: sticky; inset: auto; top: 0; height: 46vh; height: 46svh; z-index: 3; }
   .topbar { z-index: 5; }
   .stage { z-index: auto; }   /* no stacking context, so the fixed sheet can rise above the map */
   .segmented.small button { padding: 6px 8px; }
@@ -435,7 +448,7 @@ table.rankings tbody tr:hover { background: var(--wash); }
   .topbar { position: fixed; }
   .section-links, .scroll-cue { display: none; }
   .sections { margin-top: 0; }
-  .section { padding: 32px 16px; scroll-margin-top: 46vh; }   /* clear of the sticky map */
+  .section { padding: 32px 16px; scroll-margin-top: 46svh; }   /* clear of the sticky map */
   .stories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .story-open strong { padding: 0 12px; font-size: 15px; }
   .story-open .meta { padding: 0 12px; font-size: 12px; }
@@ -447,6 +460,9 @@ table.rankings tbody tr:hover { background: var(--wash); }
   .map-year { top: 60px; left: auto; right: 8px; font-size: 32px; padding: 0 12px; border-radius: 12px; }
   .topbar { padding: 12px 16px; }
   .stage { position: relative; inset: auto; height: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }
+  /* Below the map the hero sits on the page, not on the sky. */
+  .hero h1 { color: var(--ink); }
+  .hero p { color: var(--text); }
   .wordmark { font-size: 17px; padding: 6px 12px; }
   .pill-button.ghost, .pill-select { padding: 6px 10px; font-size: 14px; }
   .left, .results { width: 100%; max-height: none; }
