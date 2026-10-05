@@ -97,7 +97,7 @@
   const padding = () => {
     if (!wide()) return { top: 24, bottom: 24, left: 24, right: 24 };
     const roomy = innerWidth >= 1280;
-    return { top: 90, bottom: 50, left: 440, right: roomy && !$("results").hidden ? 460 : 40 };
+    return { top: 90, bottom: 50, left: 440, right: roomy && !$("results").hidden ? $("results").offsetWidth + 40 : 40 };
   };
 
   // The globe turns slowly until the visitor touches it.
