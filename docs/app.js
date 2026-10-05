@@ -494,7 +494,11 @@
     const { mode, body } = state.data;
     const split = mode === "change" && state.layer === "split";
     const side = mode === "now" ? body : split || state.layer === "before" ? body.before : body.after;
-    paintSide(map, side, mode === "change" && state.layer === "change" ? body.changed : null);
+    const changeLayer = mode === "change" && state.layer === "change";
+    paintSide(map, side, changeLayer ? body.changed : null);
+    // Legend entries the current layer does not draw are dimmed.
+    $("legend").querySelectorAll("li").forEach((li) =>
+      li.classList.toggle("off", changeLayer !== (li.dataset.key === "changed")));
     setFrame(side.image.corners);
     setSplit(split);
     if (split) {
@@ -588,10 +592,19 @@
       ${footer()}`;
   }
 
+  function renderLegend(mode) {
+    const legend = $("legend");
+    const keys = mode === "change" ? [...GROUPS, "changed"] : GROUPS;
+    legend.setAttribute("aria-label", t("legend"));
+    legend.innerHTML = keys.map((k) => `<li data-key="${k}">${swatch(k)}${esc(t(k))}</li>`).join("");
+    legend.hidden = false;
+  }
+
   function renderResults() {
     const { mode, body } = state.data;
     const panel = $("results");
     panel.innerHTML = mode === "now" ? renderNow(body) : renderChange(body);
+    renderLegend(mode);
     if (mode === "change") {
       $("split-tag-before").textContent = body.before.date;
       $("split-tag-after").textContent = body.after.date;
