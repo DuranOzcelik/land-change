@@ -1283,11 +1283,16 @@
     const layerButton = (key) =>
       `<button type="button" data-layer="${key}" aria-selected="${state.layer === key}">${esc(t("layer" + key[0].toUpperCase() + key.slice(1)))}</button>`;
 
+    // Main figure: net built-up change over all cells, the same cells the table's shares count.
+    // The API's built_km2 counts only cells the model is sure of on both dates, so it is shown
+    // beneath as the confident part; with clouds or coarse cells it can be far smaller.
+    const builtShare = (layer) => layer.stats.groups.find((g) => g.key === "built").share;
+    const netKm2 = ((builtShare(b) - builtShare(a)) / 100) * a.stats.total_km2;
     return `
-      ${sheetHead(`<p class="figure"><strong>${num(body.built_km2)} km²</strong><span>${esc(t("builtGain"))}</span></p>`)}
+      ${sheetHead(`<p class="figure"><strong>${netKm2 > 0 ? "+" : ""}${num(netKm2)} km²</strong><span>${esc(t("builtNet"))}</span></p>`)}
       <div class="sheet-body" id="sheet-body">
-      <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${esc(t("totalArea"))}: ${num(a.stats.total_km2, 0)} km²<br>
-        ${esc(t("changedTotal"))}: ${num(body.changed_km2)} km²</p>
+      <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${esc(t("totalArea"))}: ${num(a.stats.total_km2, 0)} km²</p>
+      <p class="meta">${esc(t("builtConfident").replace("{built}", num(body.built_km2)).replace("{changed}", num(body.changed_km2)))}</p>
       ${state.data.story ? storyBlock(state.data.story) : ""}
       ${notices(a, b)}
       ${priorNotice(state.data.prior)}
@@ -1886,10 +1891,10 @@
       <li><strong>${esc(t(`step${k}`))}</strong><span>${esc(t(`step${k}Text`))}</span></li>`).join("");
     const groups = GROUPS.map((g) => `<li><span class="name">${swatch(g)}${esc(t(g))}</span>
       <span>${GROUP_CLASSES[g].map((c) => esc(t(c))).join(", ")}</span></li>`).join("");
-    const decisions = ["Groups", "Confidence", "Season", "Clouds", "Prior"].map((k) => `
+    const decisions = ["Groups", "Confidence", "Scale", "Season", "Clouds", "Prior"].map((k) => `
       <div><p class="subhead">${esc(t(`decision${k}`))}</p><p>${esc(t(`decision${k}Text`))}</p>
       ${k === "Groups" ? `<ul class="group-list">${groups}</ul>` : ""}</div>`).join("");
-    const limits = ["Estimate", "Classes", "Europe", "Dates", "Window", "Season", "Basemap"]
+    const limits = ["Estimate", "Scale", "Classes", "Europe", "Dates", "Window", "Season", "Basemap"]
       .map((k) => `<li>${esc(t(`limit${k}`))}</li>`).join("");
     return `
       <p class="lead">${esc(t("aboutIntro"))}</p>
