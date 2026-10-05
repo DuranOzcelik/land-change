@@ -57,6 +57,11 @@
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     document.querySelectorAll("[data-i18n-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nLabel)); });
+    // Scale buttons above 1 km show a decimal, which follows the language: 1.3 km / 1,3 km.
+    document.querySelectorAll("[data-cell]").forEach((el) => {
+      const m = Number(el.dataset.cell);
+      if (m >= 1000) el.textContent = `${num(m / 1000)} km`;
+    });
     renderSections();
     $("run").textContent = t(RUN_LABEL[state.mode]);
     $("date-help").textContent = t(state.mode === "time" ? "timeHelp" : "dateHelp");
