@@ -1821,7 +1821,7 @@
 
   function storySources(story) {
     const links = (story.sources || []).filter((s) => safeUrl(s.url))
-      .map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a>`);
+      .map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.url)}</a>`);
     return links.length ? `<p class="sources">${esc(t("sources"))}: ${links.join(", ")}</p>` : "";
   }
 
@@ -1920,13 +1920,18 @@
   function restoreFromLink() {
     if (location.hash.length < 2) return;
     const p = new URLSearchParams(location.hash.slice(1));
+    // Links come from anywhere: accept only values the form itself could produce.
     const lat = Number(p.get("lat")), lon = Number(p.get("lon"));
-    if (!p.has("lat") || Number.isNaN(lat) || Number.isNaN(lon)) return;
-    if (p.get("size_km")) $("size").value = p.get("size_km");
-    if (p.get("cell_m")) setCell(Number(p.get("cell_m")));
+    if (!p.has("lat") || !p.has("lon") || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lon) > 180) return;
+    if ([...$("size").options].some((o) => o.value === p.get("size_km"))) $("size").value = p.get("size_km");
+    if (["320", "640", "1280"].includes(p.get("cell_m"))) setCell(Number(p.get("cell_m")));
     setMode(["change", "time"].includes(p.get("mode")) ? p.get("mode") : "now");
-    ["when", "before", "after", "start", "end"].forEach((k) => { if (p.get(k)) $(k).value = p.get(k); });
-    setPlace(lat, lon, p.get("q") || `${lat.toFixed(3)}, ${lon.toFixed(3)}`);
+    ["when", "before", "after", "start", "end"].forEach((k) => {
+      const v = p.get(k);
+      if (v && validDate(v)) $(k).value = v;
+    });
+    const label = (p.get("q") || "").slice(0, 120).trim();
+    setPlace(lat, lon, label || `${lat.toFixed(3)}, ${lon.toFixed(3)}`);
     // A story link opens the saved report; if that fails, run the analysis as usual.
     if (p.get("story")) openStory(p.get("story")).then((ok) => { if (!ok) $("controls").requestSubmit(); }, () => $("controls").requestSubmit());
     else $("controls").requestSubmit();
