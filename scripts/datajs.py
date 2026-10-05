@@ -15,7 +15,7 @@ def write(path, name, obj, header="", compact=False):
     body = json.dumps(obj, ensure_ascii=False, separators=(",", ":") if compact else None,
                       indent=None if compact else 1)
     comment = "".join(f"// {line}\n" for line in header.splitlines())
-    Path(path).write_text(f"{comment}{PREFIX}[{json.dumps(name)}] = {body};\n", encoding="utf-8")
+    Path(path).write_text(f"{comment}{PREFIX}[{json.dumps(name)}] = {body};\n", encoding="utf-8", newline="\n")
 
 
 def read(path):
