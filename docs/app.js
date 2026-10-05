@@ -28,7 +28,7 @@
     lang: store.get("lang") || ((navigator.language || "en").toLowerCase().startsWith("tr") ? "tr" : "en"),
     theme: store.get("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
     place: null,          // { lat, lon, label }
-    mode: "now",          // "now" | "change"
+    mode: "now",          // "now" | "change" | "time"
     cell: 640,
     data: null,           // last API response
     layer: "split",       // what the map shows in change mode: split | before | after | change
@@ -49,7 +49,8 @@
     document.title = t("title");
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
-    $("run").textContent = t(state.mode === "now" ? "runNow" : "runChange");
+    $("run").textContent = t(RUN_LABEL[state.mode]);
+    $("date-help").textContent = t(state.mode === "time" ? "timeHelp" : "dateHelp");
     $("theme").textContent = `${t("theme")}: ${t(state.theme)}`;
     $("split-handle").setAttribute("aria-label", t("slider"));
     if (stageKey) setStage(stageKey);
@@ -379,13 +380,17 @@
 
   /* ------------------------------------------------------------------ form */
 
+  const RUN_LABEL = { now: "runNow", change: "runChange", time: "runTime" };
+
   function setMode(mode) {
     state.mode = mode;
     document.querySelectorAll("#mode button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === mode)));
     $("fields-now").hidden = mode !== "now";
     $("fields-change").hidden = mode !== "change";
+    $("fields-time").hidden = mode !== "time";
+    $("date-help").textContent = t(mode === "time" ? "timeHelp" : "dateHelp");
     closeDates();
-    $("run").textContent = t(mode === "now" ? "runNow" : "runChange");
+    $("run").textContent = t(RUN_LABEL[mode]);
   }
   $("mode").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setMode(b.dataset.mode); });
 
@@ -403,6 +408,7 @@
   const today = new Date();
   const lastSummer = today.getMonth() >= 7 ? today.getFullYear() : today.getFullYear() - 1;
   $("after").value = String(lastSummer);
+  $("end").value = String(lastSummer);
 
   /* ------------------------------------------------------------------ available dates */
 
@@ -507,6 +513,13 @@
       size_km: $("size").value, cell_m: String(state.cell),
     });
     let path = "/api/analyze";
+    if (state.mode === "time") {
+      const start = Number($("start").value.trim()), end = Number($("end").value.trim());
+      const ok = /^\d{4}$/.test($("start").value.trim()) && /^\d{4}$/.test($("end").value.trim())
+        && start >= 2016 && end <= today.getFullYear() && start < end && end - start + 1 <= 13;
+      if (!ok) return setStatus(t("errYears").replace("{max}", today.getFullYear()), true);
+      return runTimeline(params, start, end);
+    }
     if (state.mode === "now") {
       const when = $("when").value.trim();
       if (when && !validDate(when)) return setStatus(t("errDate"), true);
@@ -559,6 +572,124 @@
   });
 
   $("cancel").addEventListener("click", () => { if (runAbort) runAbort.abort(); });
+
+  /* ------------------------------------------------------------------ over-time mode */
+
+  // One /api/analyze per year, two at a time (the server runs at most two heavy jobs), so the
+  // chart fills in as years arrive and every year brings its own image for the animation.
+  const YEAR_CONCURRENCY = 2;
+
+  async function runTimeline(params, start, end) {
+    const years = [];
+    for (let y = start; y <= end; y++) years.push(y);
+    // points[year]: a layer, null for a gap (no image or failed), undefined while pending.
+    const series = { years, points: {}, missing: [], failed: [] };
+    state.data = { mode: "time", body: series, label: state.place.label };
+    state.timeYear = null;
+    sheetOpen = false;
+
+    const button = $("run"), cancel = $("cancel");
+    button.disabled = true;
+    cancel.hidden = false;
+    runAbort = new AbortController();
+    const { signal } = runAbort;
+    const started = Date.now();
+    let done = 0;
+    const progress = () => setStatus(t(!done && Date.now() - started >= 12000 ? "yearsWaking" : "yearsProgress")
+      .replace("{done}", done).replace("{total}", years.length));
+    progress();
+    const wake = setTimeout(progress, 12000);
+
+    $("results").hidden = false;
+    renderResults();
+    const link = new URLSearchParams(params);
+    link.set("start", start);
+    link.set("end", end);
+    updateLink(link);
+
+    const queue = [...years];
+    async function worker() {
+      while (queue.length && !signal.aborted) {
+        const year = queue.shift();
+        const query = new URLSearchParams(params);
+        query.set("when", String(year));
+        try {
+          const res = await fetch(`${API}/api/analyze?${query}`, { signal });
+          if (res.ok) series.points[year] = await res.json();
+          else {
+            series.points[year] = null;
+            (res.status === 404 ? series.missing : series.failed).push(year);
+          }
+        } catch (err) {
+          if (err.name === "AbortError") return;
+          series.points[year] = null;
+          series.failed.push(year);
+        }
+        done++;
+        if (state.data && state.data.body === series) {
+          progress();
+          updateTimeline();
+        }
+      }
+    }
+
+    try {
+      await Promise.all(Array.from({ length: YEAR_CONCURRENCY }, worker));
+    } finally {
+      clearTimeout(wake);
+      runAbort = null;
+      cancel.hidden = true;
+      button.disabled = false;
+      const loaded = years.filter((y) => series.points[y]).length;
+      if (signal.aborted) {
+        setStatus(t("cancelled"));
+        button.focus();
+      } else if (!loaded) {
+        setStatus(series.failed.length ? t("errNetwork") : t("errNoImagery"), true);
+      } else {
+        setStatus("");
+      }
+      if (state.data && state.data.body === series) updateTimeline();
+    }
+  }
+
+  const loadedYears = (body) => body.years.filter((y) => body.points[y]);
+  const groupShare = (layer, key) => layer.stats.groups.find((g) => g.key === key).share;
+  const fadedYear = (layer) => layer.unusable_share > 5;
+
+  // Redraws the parts of the time panel that change as years arrive or the selection moves.
+  function updateTimeline() {
+    const body = state.data.body;
+    const loaded = loadedYears(body);
+    if (!loaded.includes(state.timeYear)) state.timeYear = loaded[0] ?? null;
+    const focused = document.activeElement && document.activeElement.id;
+    $("time-figure").innerHTML = timeFigure(body);
+    $("timeline").innerHTML = timelineHtml(body);
+    $("time-color").innerHTML = state.timeYear ? colorControl(body.points[state.timeYear]) : "";
+    if (focused === "chart") $("chart").focus();
+    if (state.timeYear !== state.data.paintedYear) {
+      state.data.paintedYear = state.timeYear;
+      const side = showOnMap();
+      if (side && !state.data.fitted) {
+        fit(side.image.corners, 900);
+        state.data.fitted = true;
+      }
+    }
+    applySheet();
+  }
+
+  function selectYear(year, announce) {
+    if (year === state.timeYear) return;
+    state.timeYear = year;
+    updateTimeline();
+    if (announce) $("chart-live").textContent = yearSummary(year);
+  }
+
+  function yearSummary(year) {
+    const layer = state.data.body.points[year];
+    if (!layer) return `${year}: ${t(state.data.body.failed.includes(year) ? "yearFailed" : "yearMissing")}`;
+    return `${year} (${layer.date}): ${GROUPS.map((g) => `${t(g)} ${pct(groupShare(layer, g))}`).join(", ")}`;
+  }
 
   /* ------------------------------------------------------------------ drawing the cell grid */
 
@@ -624,6 +755,16 @@
   // In split view the main map holds the earlier date and the clipped map the later one.
   function showOnMap() {
     const { mode, body } = state.data;
+    if (mode === "time") {
+      const side = body.points[state.timeYear];
+      setSplit(false);
+      if (!side) return null;
+      paintSide(map, side, null);
+      renderLegend(mode, false);
+      document.querySelectorAll("#color button").forEach((b) => { b.disabled = false; });
+      setFrame(side.image.corners);
+      return side;
+    }
     const split = mode === "change" && state.layer === "split";
     const side = mode === "now" ? body : split || state.layer === "before" ? body.before : body.after;
     const changeLayer = mode === "change" && state.layer === "change";
@@ -740,6 +881,184 @@
       </div>`;
   }
 
+  function renderTime() {
+    return `
+      ${sheetHead(`<div id="time-figure"></div>`)}
+      <div class="sheet-body" id="sheet-body">
+        <div id="timeline"></div>
+        <div id="time-color"></div>
+        ${opacityControl()}
+        ${footer()}
+      </div>`;
+  }
+
+  // Main figure: built-up share change between the first and last year that have an image.
+  function timeFigure(body) {
+    const loaded = loadedYears(body);
+    if (loaded.length < 2) return `<p class="figure"><strong>…</strong></p>`;
+    const first = loaded[0], last = loaded.at(-1);
+    const delta = groupShare(body.points[last], "built") - groupShare(body.points[first], "built");
+    return `<p class="figure"><strong>${delta > 0 ? "+" : ""}${num(delta)}</strong>
+      <span>${esc(t("builtTrend"))} (${esc(t("builtTrendRange").replace("{from}", first).replace("{to}", last))})</span></p>`;
+  }
+
+  function timelineHtml(body) {
+    const loaded = loadedYears(body);
+    const any = loaded.length ? body.points[loaded[0]] : null;
+    const faded = loaded.filter((y) => fadedYear(body.points[y]));
+    const notes = [
+      body.missing.length && t("missingYears").replace("{years}", body.missing.join(", ")),
+      body.failed.length && t("failedYears").replace("{years}", body.failed.join(", ")),
+      faded.length && t("fadedYears").replace("{years}", faded.join(", ")),
+    ].filter(Boolean);
+    const rows = body.years.map((y) => {
+      const p = body.points[y];
+      if (p === undefined) return `<tr><td>${y}</td><td colspan="5">${esc(t("yearPending"))}</td></tr>`;
+      if (!p) return `<tr><td>${y}</td><td colspan="5">${esc(t(body.failed.includes(y) ? "yearFailed" : "yearMissing"))}</td></tr>`;
+      return `<tr><td>${y}</td><td>${esc(p.date)}</td>${GROUPS.map((g) => `<td>${pct(groupShare(p, g))}</td>`).join("")}</tr>`;
+    }).join("");
+    return `
+      <p class="meta">${esc(t("yearsMeta").replace("{n}", body.years.length))}${any ? ` &nbsp; ${esc(t("totalArea"))}: ${num(any.stats.total_km2, 0)} km²` : ""}</p>
+      ${notes.map((n) => `<p class="notice">${esc(n)}</p>`).join("")}
+      <div><p class="subhead">${esc(t("chartTitle"))}</p>
+        <div class="chart" id="chart" tabindex="0" role="group" aria-label="${esc(t("chartLabel"))}">
+          ${chartSvg(body)}
+          <div class="chart-tip" id="chart-tip" hidden></div>
+        </div>
+        <p class="hint">${esc(t("chartHint"))}</p>
+        <p class="visually-hidden" id="chart-live" aria-live="polite"></p></div>
+      <details><summary>${esc(t("tableView"))}</summary>
+        <table class="years"><thead><tr><th>${esc(t("year"))}</th><th>${esc(t("date"))}</th>${GROUPS.map((g) => `<th>${swatch(g)}</th>`).join("")}</tr></thead>
+        <tbody>${rows}</tbody></table></details>`;
+  }
+
+  // Hand-written SVG line chart: one line per group, direct labels at the line ends,
+  // gaps where a year has no image, faded marks where too much of the image is unusable.
+  const CHART = { W: 360, H: 210, L: 30, R: 104, T: 10, B: 24 };
+
+  function chartX(body, year) {
+    const { W, L, R } = CHART;
+    const first = body.years[0], last = body.years.at(-1);
+    return last === first ? (L + W - R) / 2 : L + ((W - L - R) * (year - first)) / (last - first);
+  }
+
+  function chartSvg(body) {
+    const { W, H, L, R, T, B } = CHART;
+    const loaded = loadedYears(body);
+    const values = loaded.flatMap((y) => GROUPS.map((g) => groupShare(body.points[y], g)));
+    const peak = Math.max(10, ...values);
+    const step = [5, 10, 20, 25].find((s) => peak / s <= 5) || 25;
+    const top = Math.min(100, Math.ceil(peak / step) * step);
+    const y = (v) => T + (H - T - B) * (1 - v / top);
+    const x = (yr) => chartX(body, yr);
+    const colW = body.years.length > 1 ? (W - L - R) / (body.years.length - 1) : 40;
+    const out = [];
+
+    for (let v = 0; v <= top; v += step) {
+      out.push(`<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`,
+        `<text class="axis" x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${num(v, 0)}</text>`);
+    }
+    // Label every other year on long ranges, always keeping the first and the last.
+    const n = body.years.length, every = n > 8 ? 2 : 1;
+    const labelled = new Set(body.years.map((_, i) => i).filter((i) => i % every === 0));
+    if (!labelled.has(n - 1)) { labelled.delete(n - 1 - ((n - 1) % every)); labelled.add(n - 1); }
+    body.years.forEach((yr, i) => {
+      const gap = body.points[yr] === null;
+      if (gap) out.push(`<rect class="gap" x="${x(yr) - colW / 2}" y="${T}" width="${colW}" height="${H - T - B}"/>`);
+      if (labelled.has(i) || gap) {
+        out.push(`<text class="axis${gap ? " muted" : ""}" x="${x(yr)}" y="${H - 6}" text-anchor="middle">${yr}</text>`);
+      }
+    });
+    if (loaded.includes(state.timeYear)) {
+      out.push(`<line class="pick" x1="${x(state.timeYear)}" x2="${x(state.timeYear)}" y1="${T}" y2="${H - B}"/>`);
+    }
+
+    const ends = [];
+    GROUPS.forEach((g) => {
+      const colour = `var(--c-${g})`;
+      body.years.forEach((yr, i) => {
+        const next = body.years[i + 1];
+        const a = body.points[yr], b = body.points[next];
+        if (a && b) {
+          const dim = fadedYear(a) || fadedYear(b);
+          out.push(`<line class="series${dim ? " faded" : ""}" stroke="${colour}" x1="${x(yr)}" y1="${y(groupShare(a, g))}" x2="${x(next)}" y2="${y(groupShare(b, g))}"/>`);
+        }
+      });
+      loaded.forEach((yr) => {
+        const p = body.points[yr];
+        out.push(`<circle class="dot${fadedYear(p) ? " faded" : ""}" fill="${colour}" cx="${x(yr)}" cy="${y(groupShare(p, g))}" r="${yr === state.timeYear ? 4 : 2.5}"/>`);
+      });
+      if (loaded.length) {
+        const last = loaded.at(-1);
+        ends.push({ g, x: x(last) + 7, y: y(groupShare(body.points[last], g)) + 3 });
+      }
+    });
+    // Keep the end labels from overlapping.
+    ends.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) ends[i].y = Math.max(ends[i].y, ends[i - 1].y + 12);
+    const overflow = ends.length ? ends.at(-1).y - (H - B) : 0;
+    if (overflow > 0) ends.forEach((e) => { e.y -= overflow; });
+    ends.forEach((e) => out.push(`<text class="end" x="${e.x}" y="${e.y}" fill="var(--c-${e.g})">${esc(t(e.g))}</text>`));
+
+    body.years.forEach((yr) => {
+      out.push(`<rect class="hit" data-year="${yr}" x="${x(yr) - colW / 2}" y="${T}" width="${colW}" height="${H - T}"/>`);
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${out.join("")}</svg>`;
+  }
+
+  function showTip(year) {
+    const tip = $("chart-tip"), chart = $("chart");
+    if (!tip || year == null) return;
+    const body = state.data.body;
+    const p = body.points[year];
+    tip.innerHTML = p
+      ? `<strong>${year}</strong> <span class="meta">${esc(p.date)}</span>
+         ${GROUPS.map((g) => `<span class="row">${swatch(g)}${esc(t(g))}<b>${pct(groupShare(p, g))}</b></span>`).join("")}
+         ${fadedYear(p) ? `<span class="meta">${esc(t("yearFaded"))}</span>` : ""}`
+      : `<strong>${year}</strong> <span class="meta">${esc(p === undefined ? t("yearPending") : t(body.failed.includes(year) ? "yearFailed" : "yearMissing"))}</span>`;
+    tip.hidden = false;
+    const share = chartX(body, year) / CHART.W;
+    const width = chart.clientWidth;
+    const left = Math.min(Math.max(share * width - tip.offsetWidth / 2, 0), width - tip.offsetWidth);
+    tip.style.left = `${left}px`;
+  }
+
+  function hideTip() {
+    const tip = $("chart-tip");
+    if (tip && document.activeElement !== $("chart")) tip.hidden = true;
+  }
+
+  // Chart interaction, delegated because the chart is redrawn as years arrive.
+  const results = $("results");
+  results.addEventListener("pointermove", (e) => {
+    const hit = e.target.closest("#chart .hit");
+    if (hit) showTip(Number(hit.dataset.year));
+  });
+  results.addEventListener("pointerout", (e) => {
+    if (e.target.closest("#chart") && !e.relatedTarget?.closest?.("#chart")) hideTip();
+  });
+  results.addEventListener("click", (e) => {
+    const hit = e.target.closest("#chart .hit");
+    if (!hit) return;
+    const year = Number(hit.dataset.year);
+    if (state.data.body.points[year]) selectYear(year, false);
+    showTip(year);
+  });
+  results.addEventListener("keydown", (e) => {
+    if (e.target.id !== "chart") return;
+    const loaded = loadedYears(state.data.body);
+    if (!loaded.length) return;
+    const i = loaded.indexOf(state.timeYear);
+    const next = { ArrowLeft: loaded[Math.max(0, i - 1)], ArrowRight: loaded[Math.min(loaded.length - 1, i + 1)],
+      Home: loaded[0], End: loaded.at(-1) }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    selectYear(next, true);
+    showTip(next);
+  });
+  results.addEventListener("focusin", (e) => { if (e.target.id === "chart") showTip(state.timeYear); });
+  results.addEventListener("focusout", (e) => { if (e.target.id === "chart") $("chart-tip").hidden = true; });
+
   // Entries the current layer does not draw are dimmed rather than removed.
   function renderLegend(mode, changeLayer) {
     const legend = $("legend");
@@ -767,42 +1086,49 @@
   function renderResults() {
     const { mode, body } = state.data;
     const panel = $("results");
-    panel.innerHTML = mode === "now" ? renderNow(body) : renderChange(body);
+    panel.innerHTML = mode === "now" ? renderNow(body) : mode === "change" ? renderChange(body) : renderTime(body);
     if (mode === "change") {
       $("split-tag-before").textContent = body.before.date;
       $("split-tag-after").textContent = body.after.date;
     }
+    if (mode === "time") {
+      state.data.paintedYear = undefined;
+      updateTimeline();
+    }
     const side = showOnMap();
-    fit(side.image.corners, 900);
+    if (side && !state.data.fitted) {
+      fit(side.image.corners, 900);
+      state.data.fitted = true;
+    }
 
     $("opacity").addEventListener("input", (e) => {
       state.opacity = Number(e.target.value) / 100;
       maps().forEach((target) => { if (target.getLayer("cells")) target.setPaintProperty("cells", "raster-opacity", state.opacity); });
-    });
-    $("color").addEventListener("click", (e) => {
-      const b = e.target.closest("button");
-      if (!b || b.disabled) return;
-      state.color = b.dataset.color;
-      document.querySelectorAll("#color button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-      showOnMap();
     });
     $("again").addEventListener("click", () => { setSheet(false); searchInput.value = ""; searchInput.focus(); });
     $("copy").addEventListener("click", async (e) => {
       try { await navigator.clipboard.writeText(location.href); e.target.textContent = t("copied"); } catch { /* clipboard blocked */ }
     });
 
-    if (mode === "change") {
-      $("layer").addEventListener("click", (e) => {
-        const b = e.target.closest("button");
-        if (!b) return;
-        state.layer = b.dataset.layer;
-        document.querySelectorAll("#layer button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-        $("sides").hidden = state.layer !== "split";
-        showOnMap();
-      });
-    }
     applySheet();
   }
+
+  // Panel controls are re-rendered often, so their clicks are handled once, here.
+  $("results").addEventListener("click", (e) => {
+    const colour = e.target.closest("#color button");
+    if (colour && !colour.disabled) {
+      state.color = colour.dataset.color;
+      document.querySelectorAll("#color button").forEach((x) => x.setAttribute("aria-selected", String(x === colour)));
+      showOnMap();
+    }
+    const layer = e.target.closest("#layer button");
+    if (layer) {
+      state.layer = layer.dataset.layer;
+      document.querySelectorAll("#layer button").forEach((x) => x.setAttribute("aria-selected", String(x === layer)));
+      $("sides").hidden = state.layer !== "split";
+      showOnMap();
+    }
+  });
 
   /* ------------------------------------------------------------------ phone bottom sheet */
 
@@ -886,8 +1212,8 @@
     if (!p.has("lat") || Number.isNaN(lat) || Number.isNaN(lon)) return;
     if (p.get("size_km")) $("size").value = p.get("size_km");
     if (p.get("cell_m")) setCell(Number(p.get("cell_m")));
-    setMode(p.get("mode") === "change" ? "change" : "now");
-    ["when", "before", "after"].forEach((k) => { if (p.get(k)) $(k).value = p.get(k); });
+    setMode(["change", "time"].includes(p.get("mode")) ? p.get("mode") : "now");
+    ["when", "before", "after", "start", "end"].forEach((k) => { if (p.get(k)) $(k).value = p.get(k); });
     setPlace(lat, lon, p.get("q") || `${lat.toFixed(3)}, ${lon.toFixed(3)}`);
     $("controls").requestSubmit();
   }

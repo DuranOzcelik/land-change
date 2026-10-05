@@ -288,6 +288,29 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 .sides strong { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 .sides .hint { display: block; margin-top: 2px; }
 
+/* ---------- over-time chart ---------- */
+.chart { position: relative; border-radius: var(--r-field); }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.chart .axis.muted { fill: var(--muted); opacity: 0.6; text-decoration: line-through; }
+.chart .gap { fill: var(--surface-2); opacity: 0.6; }
+.chart .pick { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .series { stroke-width: 2; stroke-linecap: round; }
+.chart .faded { opacity: 0.35; }
+.chart .end { font-size: 10px; font-weight: 600; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart-tip {
+  position: absolute; bottom: calc(100% + 6px); z-index: 2; display: grid; gap: 2px; min-width: 170px;
+  padding: 8px 10px; font-size: 13px; color: var(--ink); background: var(--surface);
+  border-radius: var(--r-field); box-shadow: 0 0 0 1px var(--line), var(--shadow); pointer-events: none;
+}
+.chart-tip[hidden] { display: none; }
+.chart-tip .meta { margin: 0; font-size: 12px; }
+.chart-tip .row { display: flex; align-items: center; gap: 6px; }
+.chart-tip .row b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+table.years th .swatch { display: inline-block; }
+
 .range { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--ink); }
 .range input { flex: 1; accent-color: var(--ink); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -322,7 +345,8 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
   /* Results become a bottom sheet: closed shows the head, open stops at 60% so the globe keeps 40%. */
   .results {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
-    max-height: 60vh; max-height: 60dvh; padding: 0; gap: 0; overflow: hidden;
+    max-height: 60vh; max-height: 60dvh; padding: 0; gap: 0;
+    overflow: hidden; overflow: clip;   /* clip: focus inside the body must not scroll the sheet itself */
     border-radius: var(--r-card) var(--r-card) 0 0;
     transform: translateY(calc(100% - var(--sheet-peek, 0px)));
     transition: transform 0.25s ease;
