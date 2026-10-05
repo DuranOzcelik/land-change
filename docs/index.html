@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Land Change</title>
+  <meta name="description" content="See how land cover changed anywhere on Earth, from Sentinel-2 satellite imagery classified by a neural network.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="map" aria-label="Globe"></div>
+
+  <header class="topbar">
+    <a class="wordmark" href="./" data-i18n="title">Land Change</a>
+    <div class="topbar-tools">
+      <label class="visually-hidden" for="lang" data-i18n="language">Language</label>
+      <select id="lang" class="pill-select"></select>
+      <button id="theme" class="pill-button ghost" type="button"></button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="left">
+      <div class="hero" id="hero">
+        <h1 data-i18n="hero">Where has the land changed?</h1>
+        <p data-i18n="heroSub"></p>
+      </div>
+
+      <form class="card controls" id="controls" autocomplete="off">
+        <div class="search">
+          <input id="search" type="search" data-i18n-placeholder="searchPlaceholder" aria-controls="suggestions" aria-autocomplete="list">
+          <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+          <p class="hint" id="place-line" data-i18n="searchHint"></p>
+        </div>
+
+        <div class="options" id="options" hidden>
+        <div class="segmented" role="tablist" id="mode">
+          <button type="button" role="tab" data-mode="now" data-i18n="modeNow" aria-selected="true"></button>
+          <button type="button" role="tab" data-mode="change" data-i18n="modeChange" aria-selected="false"></button>
+        </div>
+
+        <div class="fields" id="fields-now">
+          <label><span data-i18n="when"></span>
+            <input id="when" type="text" inputmode="numeric" data-i18n-placeholder="latest">
+          </label>
+        </div>
+        <div class="fields two" id="fields-change" hidden>
+          <label><span data-i18n="before"></span><input id="before" type="text" inputmode="numeric" value="2016"></label>
+          <label><span data-i18n="after"></span><input id="after" type="text" inputmode="numeric"></label>
+        </div>
+        <p class="hint" data-i18n="dateHelp"></p>
+
+        <div class="row">
+          <div>
+            <span class="label" data-i18n="cell"></span>
+            <div class="segmented small" id="cell">
+              <button type="button" data-cell="320" aria-selected="false">320 m</button>
+              <button type="button" data-cell="640" aria-selected="true">640 m</button>
+              <button type="button" data-cell="1280" aria-selected="false">1,3 km</button>
+            </div>
+          </div>
+          <label class="size"><span data-i18n="area"></span>
+            <select id="size" class="pill-select">
+              <option value="10">10 km</option><option value="15">15 km</option>
+              <option value="20" selected>20 km</option><option value="25">25 km</option>
+            </select>
+          </label>
+        </div>
+
+        <button class="pill-button primary" id="run" type="submit"></button>
+        </div>
+        <p class="status" id="status" role="status" hidden></p>
+      </form>
+    </section>
+
+    <section class="card results" id="results" hidden aria-live="polite"></section>
+  </main>
+
+  <footer class="credit"><span data-i18n="credit"></span></footer>
+
+  <script src="vendor/maplibre-gl.js"></script>
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
