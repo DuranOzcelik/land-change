@@ -28,6 +28,11 @@
 
   <header class="topbar">
     <a class="wordmark" href="./" data-i18n="title">Land Change</a>
+    <nav class="section-links" data-i18n-label="exploreLabel">
+      <button class="pill-button ghost" type="button" data-scroll="examples" data-i18n="examplesTitle"></button>
+      <button class="pill-button ghost" type="button" data-scroll="rankings" data-i18n="rankingsTitle"></button>
+      <button class="pill-button ghost" type="button" data-scroll="about" data-i18n="aboutTitle"></button>
+    </nav>
     <div class="topbar-tools">
       <label class="visually-hidden" for="lang" data-i18n="language">Language</label>
       <select id="lang" class="pill-select"></select>
@@ -114,24 +119,28 @@
           <button class="pill-button small" id="cancel" type="button" data-i18n="cancel" hidden></button>
         </div>
       </form>
-
-      <nav class="explore" id="explore" data-i18n-label="exploreLabel">
-        <button class="pill-button ghost" type="button" data-view="rankings" data-i18n="rankingsTitle"></button>
-        <button class="pill-button ghost" type="button" data-view="stories" data-i18n="storiesTitle"></button>
-        <button class="pill-button ghost" type="button" data-view="about" data-i18n="aboutTitle"></button>
-      </nav>
     </section>
 
     <section class="card results" id="results" hidden aria-live="polite"></section>
   </main>
 
-  <dialog class="dialog" id="dialog" aria-labelledby="dialog-title">
-    <div class="dialog-head">
-      <h2 id="dialog-title"></h2>
-      <button class="pill-button small" id="dialog-close" type="button" data-i18n="close"></button>
-    </div>
-    <div class="dialog-body" id="dialog-body"></div>
-  </dialog>
+  <button class="scroll-cue" type="button" data-scroll="examples" data-i18n="sectionsCue"></button>
+
+  <!-- Below the map: always-open sections, filled from the data files by app.js. -->
+  <div class="sections">
+    <section class="section" id="examples" aria-labelledby="examples-title">
+      <h2 id="examples-title" data-i18n="examplesTitle"></h2>
+      <div class="section-body" id="examples-body"></div>
+    </section>
+    <section class="section" id="rankings" aria-labelledby="rankings-title">
+      <h2 id="rankings-title" data-i18n="rankingsTitle"></h2>
+      <div class="section-body" id="rankings-body"></div>
+    </section>
+    <section class="section" id="about" aria-labelledby="about-title">
+      <h2 id="about-title" data-i18n="aboutTitle"></h2>
+      <div class="section-body" id="about-body"></div>
+    </section>
+  </div>
 
   <footer class="credit"><span data-i18n="credit"></span></footer>
 

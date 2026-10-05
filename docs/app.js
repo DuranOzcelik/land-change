@@ -50,7 +50,7 @@
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     document.querySelectorAll("[data-i18n-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nLabel)); });
-    if (dialog.open && view) openView(view);
+    renderSections();
     $("run").textContent = t(RUN_LABEL[state.mode]);
     $("date-help").textContent = t(state.mode === "time" ? "timeHelp" : "dateHelp");
     $("theme").textContent = `${t("theme")}: ${t(state.theme)}`;
@@ -1301,12 +1301,10 @@
   });
   addEventListener("resize", applySheet);
 
-  /* ------------------------------------------------------------------ dialog views */
+  /* ------------------------------------------------------------------ sections below the map */
 
-  // Rankings, stories and the "how it works" page share one modal dialog.
-  const dialog = $("dialog");
-  let view = null;
-  const VIEWS = { rankings: renderRankings, stories: renderStories, about: renderAbout };
+  // Examples, the city ranking and "how it works" are always-open sections under the map.
+  const SECTIONS = { examples: renderStories, rankings: renderRankings, about: renderAbout };
   const jsonCache = new Map();
 
   async function loadJson(url) {
@@ -1316,27 +1314,25 @@
     try { return await jsonCache.get(url); } catch (err) { jsonCache.delete(url); throw err; }
   }
 
-  async function openView(name) {
-    view = name;
-    $("dialog-title").textContent = t(`${name}Title`);
-    const body = $("dialog-body");
-    body.innerHTML = `<p class="meta">${esc(t("loadingData"))}</p>`;
-    if (!dialog.open) dialog.showModal();
-    try {
-      body.innerHTML = await VIEWS[name]();
-    } catch {
-      body.innerHTML = `<p class="notice">${esc(t("errData"))}</p>`;
-    }
-    body.scrollTop = 0;
+  function renderSections() {
+    Object.entries(SECTIONS).forEach(async ([id, render]) => {
+      const body = $(`${id}-body`);
+      try {
+        body.innerHTML = await render();
+      } catch {
+        body.innerHTML = `<p class="notice">${esc(t("errData"))}</p>`;
+      }
+    });
   }
 
-  $("explore").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-view]");
-    if (b) openView(b.dataset.view);
+  const scrollOpts = () => ({ behavior: reducedMotion ? "auto" : "smooth" });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-scroll]");
+    if (b) $(b.dataset.scroll).scrollIntoView({ ...scrollOpts(), block: "start" });
   });
-  $("dialog-close").addEventListener("click", () => dialog.close());
-  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });   // backdrop
-  dialog.addEventListener("close", () => { view = null; });
+
+  // After picking something in a section, bring the map back into view.
+  const backToMap = () => scrollTo({ top: 0, ...scrollOpts() });
 
   const countryName = (code) => {
     try { return new Intl.DisplayNames([state.lang], { type: "region" }).of(code); } catch { return code; }
@@ -1401,7 +1397,7 @@
 
   // Opens the change report for a ranked city with the same settings the ranking used.
   function openCityReport(city, params) {
-    dialog.close();
+    backToMap();
     $("size").value = String(params.size_km);
     setCell(params.cell_m);
     setMode("change");
@@ -1411,8 +1407,7 @@
     $("controls").requestSubmit();
   }
 
-  dialog.addEventListener("click", async (e) => {
-    if (view !== "rankings") return;
+  $("rankings-body").addEventListener("click", async (e) => {
     const data = await loadJson("data/rankings.json");
     const sort = e.target.closest("button[data-sort]");
     if (sort) {
@@ -1426,7 +1421,7 @@
     const row = e.target.closest("[data-city]");
     if (row) openCityReport(data.cities[Number(row.dataset.city)], data.params);
   });
-  dialog.addEventListener("change", async (e) => {
+  $("rankings-body").addEventListener("change", async (e) => {
     if (e.target.id !== "rank-country") return;
     rankView.country = e.target.value;
     $("ranking-table").innerHTML = rankingTable(await loadJson("data/rankings.json"));
@@ -1447,17 +1442,17 @@
   async function renderStories() {
     const { stories } = await loadJson("data/stories.json");
     return `
-      <p class="meta">${esc(t("storiesIntro"))}</p>
+      <p class="lead">${esc(t("storiesIntro"))}</p>
       <ul class="stories">${stories.map((s) => {
         const text = s.description[state.lang] || "";
         return `<li class="story">
-          <img src="data/stories/${esc(s.id)}-after.jpg" alt="" loading="lazy" width="320" height="320">
-          <div>
-            <button type="button" class="story-open" data-story="${esc(s.id)}">${esc(storyTitle(s))}</button>
-            <p class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km</p>
-            ${text ? `<p>${esc(text)}</p>` : ""}
-            ${storySources(s)}
-          </div></li>`;
+          <button type="button" class="story-open" data-story="${esc(s.id)}">
+            <img src="data/stories/${esc(s.id)}-after.jpg" alt="" loading="lazy" width="320" height="240">
+            <strong>${esc(storyTitle(s))}</strong>
+            <span class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km</span>
+          </button>
+          ${text ? `<p>${esc(text)}</p>` : ""}
+          ${storySources(s)}</li>`;
       }).join("")}</ul>`;
   }
 
@@ -1466,7 +1461,7 @@
     const story = stories.find((s) => s.id === id);
     if (!story) return false;
     const body = await loadJson(`data/stories/${encodeURIComponent(id)}.json`);
-    if (dialog.open) dialog.close();
+    backToMap();
     stopPlaying();
     const { lat, lon, size_km: size, cell_m: cell } = story.location;
     $("size").value = String(size);
@@ -1488,8 +1483,8 @@
     return true;
   }
 
-  dialog.addEventListener("click", (e) => {
-    const b = view === "stories" && e.target.closest("[data-story]");
+  $("examples-body").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-story]");
     if (b) openStory(b.dataset.story).catch(() => setStatus(t("errData"), true));
   });
 

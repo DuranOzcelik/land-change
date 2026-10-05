@@ -13,7 +13,6 @@
   --on-accent: #163300;
   --danger: #cb272f;
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  --scrim: rgba(14, 15, 12, 0.45);
 
   /* Map colours: the Okabe-Ito palette (colour-blind safe, free to use). The ten classes are
      lighter and darker mixes of their group's colour. Map colours sit on satellite imagery,
@@ -51,25 +50,27 @@
   --line: rgba(226, 246, 213, 0.18);
   --danger: #ff8b8f;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-  --scrim: rgba(0, 0, 0, 0.6);
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+html, body { margin: 0; }
+/* The first screen is the map app; the page scrolls on to the sections below it. */
 body {
+  position: relative;
+  display: flow-root;   /* keeps the sections' top margin inside the body */
   font-family: var(--font);
   font-size: 16px;
   line-height: 1.5;
   letter-spacing: -0.006em;
   color: var(--text);
   background: var(--bg);
-  overflow: hidden;
+  overflow-x: hidden;
 }
 button, input, select { font: inherit; color: inherit; letter-spacing: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.map-wrap { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.map-wrap { position: absolute; top: 0; left: 0; right: 0; height: 100vh; z-index: 0; overflow: hidden; }
 #map, #map-after { position: absolute; inset: 0; background: var(--bg); }
 #map-after[hidden] { display: none; }
 #map-after, #map-after * { pointer-events: none; }
@@ -128,10 +129,12 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 
 /* ---------- top bar ---------- */
 .topbar {
-  position: fixed; inset: 0 0 auto 0; z-index: 3;
-  display: flex; align-items: center; justify-content: space-between;
+  position: absolute; inset: 0 0 auto 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px 24px; pointer-events: none;
 }
+.section-links { display: flex; gap: 8px; }
+.section-links .pill-button { font-size: 14px; white-space: nowrap; }
 .topbar > * { pointer-events: auto; }
 .wordmark {
   font-weight: 900; font-size: 22px; letter-spacing: -0.03em;
@@ -169,7 +172,7 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 
 /* ---------- layout ---------- */
 .stage {
-  position: fixed; inset: 68px 0 40px 0; z-index: 2;
+  position: absolute; top: 68px; left: 0; right: 0; height: calc(100vh - 108px); z-index: 2;
   display: flex; justify-content: space-between; align-items: flex-start; gap: 24px;
   padding: 8px 24px 0; pointer-events: none;
 }
@@ -332,23 +335,23 @@ table.years th .swatch { display: inline-block; }
 .range input { flex: 1; accent-color: var(--ink); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-/* ---------- explore links and the shared dialog ---------- */
-.explore { display: flex; flex-wrap: wrap; gap: 8px; }
-.explore .pill-button { font-size: 14px; }
-.dialog {
-  width: min(920px, calc(100% - 48px)); max-height: calc(100dvh - 48px); padding: 0; border: 0;
-  display: flex; flex-direction: column; color: var(--text); background: var(--surface);
-  border-radius: var(--r-card); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+/* ---------- sections below the map ---------- */
+.scroll-cue {
+  position: absolute; top: calc(100vh - 38px); right: 24px; z-index: 2;
+  display: flex; align-items: center; gap: 8px; padding: 6px 16px; border: 0; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--ink); background: var(--surface);
+  border-radius: var(--r-pill); box-shadow: 0 0 0 1px var(--line); white-space: nowrap;
 }
-.dialog:not([open]) { display: none; }
-.dialog::backdrop { background: var(--scrim); }
-.dialog-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 20px 24px 16px; border-bottom: 1px solid var(--line);
+.scroll-cue::after {
+  content: ""; width: 7px; height: 7px; margin-top: -3px;
+  border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
 }
-.dialog-head h2 { margin: 0; color: var(--ink); font-size: 26px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
-.dialog-body { overflow: auto; padding: 20px 24px 28px; display: flex; flex-direction: column; gap: 16px; }
-.dialog-body .meta { margin: 0; font-size: 14px; color: var(--muted); }
+.sections { position: relative; z-index: 1; margin-top: 100vh; background: var(--bg); border-top: 1px solid var(--line); }
+.section { max-width: 1240px; margin: 0 auto; padding: 56px 24px; display: flex; flex-direction: column; gap: 24px; }
+.section + .section { border-top: 1px solid var(--line); }
+.section h2 { margin: 0; color: var(--ink); font-size: clamp(32px, 4vw, 48px); font-weight: 900; letter-spacing: -0.035em; line-height: 1; }
+.section-body { display: flex; flex-direction: column; gap: 16px; }
+.section-body .meta { margin: 0; font-size: 14px; color: var(--muted); }
 .filter { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: var(--ink); }
 
 table.rankings th, table.rankings td { padding-left: 10px; vertical-align: middle; }
@@ -364,15 +367,17 @@ table.rankings tbody tr:hover { background: var(--wash); }
   display: inline-block; padding: 1px 8px; border-radius: var(--r-pill); background: var(--surface-2);
   color: var(--ink); font-size: 12px; font-weight: 500;
 }
-.stories { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.story { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: start; padding: 12px; border-radius: 20px; background: var(--surface-2); }
-.story img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; background: var(--line); }
-.story p { margin: 4px 0 0; font-size: 14px; }
+.stories { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+.story { display: flex; flex-direction: column; gap: 8px; }
+.story p { margin: 0; font-size: 14px; }
 .story-open {
-  border: 0; background: none; padding: 0; text-align: left; cursor: pointer;
-  font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
-  text-decoration: underline; text-underline-offset: 3px;
+  display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 0 0 14px; border: 0; cursor: pointer;
+  text-align: left; color: var(--ink); background: var(--surface-2); border-radius: var(--r-card); overflow: hidden;
 }
+.story-open img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--line); }
+.story-open strong { padding: 0 16px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.story-open .meta { padding: 0 16px; margin: 0; font-size: 14px; color: var(--muted); }
+.story-open:hover strong { text-decoration: underline; text-underline-offset: 3px; }
 .sources { font-size: 13px; color: var(--muted); }
 .sources a, .story-text a { color: var(--ink); }
 .story-text p { margin: 0 0 6px; font-size: 14px; }
@@ -399,15 +404,17 @@ table.rankings tbody tr:hover { background: var(--wash); }
 /* ---------- map furniture ---------- */
 .pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px #163300, 0 0 0 5px rgba(255,255,255,.9); }
 .credit {
-  position: fixed; left: 24px; bottom: 8px; z-index: 1; padding: 3px 10px; max-width: 60vw;
+  /* Anchored to the bottom of the first screen; grows upwards if it wraps. */
+  position: absolute; left: 24px; top: calc(100vh - 8px); transform: translateY(-100%); z-index: 1;
+  padding: 3px 10px; max-width: 60vw;
   font-size: 12px; color: var(--muted); background: var(--surface); border-radius: var(--r-pill);
   box-shadow: 0 0 0 1px var(--line); pointer-events: none;
 }
 
+@media (max-width: 1100px) { .section-links { display: none; } }
+
 /* ---------- small screens: the globe stays on top, panels become a sheet ---------- */
 @media (max-width: 860px) {
-  /* The document scrolls (not a 100%-high body), so the sticky map stays in view. */
-  html, body { height: auto; }
   body { overflow: visible; padding-bottom: var(--sheet-peek, 0px); }
   /* The map sits above the scrolling form so the globe always keeps its share of the screen. */
   .map-wrap { position: sticky; inset: auto; top: 0; height: 46vh; z-index: 3; }
@@ -415,24 +422,26 @@ table.rankings tbody tr:hover { background: var(--wash); }
   .stage { z-index: auto; }   /* no stacking context, so the fixed sheet can rise above the map */
   .segmented.small button { padding: 6px 8px; }
   .legend { left: 8px; bottom: 8px; max-width: calc(100% - 16px); }
-  .dialog { width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; border-radius: 0; }
-  .dialog-head { padding: 14px 16px 12px; }
-  .dialog-head h2 { font-size: 22px; }
-  .dialog-body { padding: 16px 16px 24px; }
+  .topbar { position: fixed; }
+  .section-links, .scroll-cue { display: none; }
+  .sections { margin-top: 0; }
+  .section { padding: 32px 16px; scroll-margin-top: 46vh; }   /* clear of the sticky map */
+  .stories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .story-open strong { padding: 0 12px; font-size: 15px; }
+  .story-open .meta { padding: 0 12px; font-size: 12px; }
   table.rankings { font-size: 13px; }
-  .stories { grid-template-columns: 1fr; }
   .flow, .decisions { grid-template-columns: 1fr; }
   .flow li + li::before { left: 50%; top: -19px; width: 2px; height: 12px; }
   .flow li + li::after { left: calc(50% - 4px); top: -9px; border: 5px solid transparent; border-top: 6px solid var(--ink); border-bottom: 0; }
   .group-list .name { min-width: 120px; }
   .map-year { top: 60px; left: auto; right: 8px; font-size: 32px; padding: 0 12px; border-radius: 12px; }
   .topbar { padding: 12px 16px; }
-  .stage { position: relative; inset: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }
+  .stage { position: relative; inset: auto; height: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }
   .wordmark { font-size: 17px; padding: 6px 12px; }
   .pill-button.ghost, .pill-select { padding: 6px 10px; font-size: 14px; }
   .left, .results { width: 100%; max-height: none; }
   .hero h1 { font-size: clamp(40px, 12vw, 56px); }
-  .credit { position: static; max-width: none; margin: 0 16px 16px; display: inline-block; border-radius: 12px; }
+  .credit { position: static; transform: none; max-width: none; margin: 0 16px 16px; display: inline-block; border-radius: 12px; }
 
   /* Results become a bottom sheet: closed shows the head, open stops at 60% so the globe keeps 40%. */
   .results {
