@@ -36,6 +36,7 @@
   --c-water: #0072b2;
   --c-changed: #cc79a7;
   --c-lowconf: #f0e442;   /* confidence layer: opacity carries the value */
+  --c-invalid: #8c8c8c;   /* cloud, shadow or missing data: neutral, outside the palette */
   --c-AnnualCrop: #f0c566;
   --c-PermanentCrop: #e69f00;
   --c-Pasture: #ac7700;

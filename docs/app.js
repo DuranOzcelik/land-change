@@ -24,8 +24,14 @@
     set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode */ } },
   };
 
+  // Language follows the visitor's location: Turkish in Turkey, English elsewhere. The time zone
+  // is used as the signal, so no address lookup is needed; a manual choice is remembered.
+  const inTurkey = () => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone === "Europe/Istanbul"; } catch { return false; }
+  };
+
   const state = {
-    lang: store.get("lang") || ((navigator.language || "en").toLowerCase().startsWith("tr") ? "tr" : "en"),
+    lang: store.get("lang") || (inTurkey() ? "tr" : "en"),
     theme: store.get("theme") || "dark",
     place: null,          // { lat, lon, label }
     mode: "now",          // "now" | "change" | "time"
@@ -685,7 +691,8 @@
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || "");
-        throw new Error(res.status === 404 ? t("errNoImagery") : res.status === 422 ? t("errInput") + detail : t("errNetwork"));
+        throw new Error(res.status === 404 ? t("errNoImagery") : res.status === 422 ? t("errInput") + detail
+          : res.status === 429 ? t("errBusy") : t("errNetwork"));
       }
       const raw = await res.json();
       const { body, prior } = await withPrior(state.mode, raw);
@@ -931,32 +938,49 @@
   const confidenceAlpha = (conf) =>
     Math.round(255 * Math.min(1, Math.max(0, (CONF_CLEAR - conf) / (CONF_CLEAR - CONF_FULL))));
 
-  // Returns (row, col) => [r, g, b, a] for the current colouring.
-  function cellColour(side, changed) {
+  // grid.valid: 1 usable, 0 cloud, shadow or missing data. Older saved responses have no matrix,
+  // and then every cell counts as usable.
+  const validGrid = (side) => side.grid.valid || null;
+  const hasInvalid = (valid) => !!valid && valid.some((row) => row.includes(0));
+  // Change view: a cell is usable only when it is usable on both dates.
+  const bothValidCache = new WeakMap();
+  function bothValid(body) {
+    const a = validGrid(body.before), b = validGrid(body.after);
+    if (!a && !b) return null;
+    if (!bothValidCache.has(body)) {
+      bothValidCache.set(body, (a || b).map((row, r) => row.map((_, c) => ((!a || a[r][c]) && (!b || b[r][c]) ? 1 : 0))));
+    }
+    return bothValidCache.get(body);
+  }
+
+  // Returns (row, col) => [r, g, b, a] for the current colouring; unusable cells are grey.
+  function cellColour(side, changed, valid) {
+    const grey = [...hexToRgb(cssVar("--c-invalid")), 255];
+    const paint = (fn) => (valid ? (r, c) => (valid[r][c] === 0 ? grey : fn(r, c)) : fn);
     if (changed) {
       const on = hexToRgb(cssVar("--c-changed"));
-      return (r, c) => (changed[r][c] ? [...on, 255] : [0, 0, 0, 150]);
+      return paint((r, c) => (changed[r][c] ? [...on, 255] : [0, 0, 0, 150]));
     }
     if (state.color === "confidence") {
       const ink = hexToRgb(cssVar("--c-lowconf"));
-      return (r, c) => [...ink, side.grid.groups[r][c] < 0 ? 0 : confidenceAlpha(side.grid.confidence[r][c])];
+      return paint((r, c) => [...ink, side.grid.groups[r][c] < 0 ? 0 : confidenceAlpha(side.grid.confidence[r][c])]);
     }
     if (state.color === "classes") {
       const colors = CLASSES.map((k) => hexToRgb(cssVar(`--c-${k}`)));
-      return (r, c) => (side.grid.classes[r][c] < 0 ? [0, 0, 0, 0] : [...colors[side.grid.classes[r][c]], 255]);
+      return paint((r, c) => (side.grid.classes[r][c] < 0 ? [0, 0, 0, 0] : [...colors[side.grid.classes[r][c]], 255]));
     }
     const colors = GROUPS.map((g) => hexToRgb(cssVar(`--c-${g}`)));
-    return (r, c) => (side.grid.groups[r][c] < 0 ? [0, 0, 0, 0] : [...colors[side.grid.groups[r][c]], 255]);
+    return paint((r, c) => (side.grid.groups[r][c] < 0 ? [0, 0, 0, 0] : [...colors[side.grid.groups[r][c]], 255]));
   }
 
   // One pixel per cell, then enlarged without smoothing so cells stay crisp on the map.
-  function gridCanvas(side, changed) {
+  function gridCanvas(side, changed, valid) {
     const rows = side.grid.rows, cols = side.grid.cols;
     const small = document.createElement("canvas");
     small.width = cols; small.height = rows;
     const ctx = small.getContext("2d");
     const img = ctx.createImageData(cols, rows);
-    const colour = cellColour(side, changed);
+    const colour = cellColour(side, changed, valid);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         img.data.set(colour(r, c), (r * cols + c) * 4);
@@ -1069,6 +1093,7 @@
   // so untouched values stay exactly as the API reported them.
   function correctLayer(layer, mask, cellKm2) {
     const { rows, cols } = layer.grid;
+    const valid = validGrid(layer);
     const groups = layer.grid.groups.map((row) => row.slice());
     const classes = layer.grid.classes.map((row) => row.slice());
     const dGroup = {}, dClass = {};
@@ -1077,6 +1102,7 @@
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const i = r * cols + c, g = groups[r][c], k = classes[r][c];
+        if (valid && valid[r][c] === 0) continue;   // not in the statistics
         if (mask.ice[i]) {
           move(dGroup, GROUPS[g]); move(dClass, CLASSES[k]);
           groups[r][c] = -1; classes[r][c] = -1;
@@ -1109,6 +1135,18 @@
     if (a.layer === body.before && b.layer === body.after) return { body, relabelled: 0, removed: 0 };
     const cols = body.before.grid.cols;
     let changedKm2 = body.changed_km2, builtKm2 = body.built_km2, relabelled = 0;
+    // The API's net built-up change and area usable on both dates lose the corrected cells too.
+    const both = bothValid(body);
+    let netKm2 = body.net_built_km2, validKm2 = body.valid_km2;
+    if (netKm2 != null || validKm2 != null) {
+      body.before.grid.groups.forEach((row, r) => row.forEach((_, c) => {
+        const i = r * cols + c;
+        if ((both && !both[r][c]) || !(mask.water[i] || mask.ice[i])) return;
+        const gb = GROUPS[body.before.grid.groups[r][c]], ga = GROUPS[body.after.grid.groups[r][c]];
+        if (netKm2 != null) netKm2 -= ((ga === "built") - (gb === "built")) * cellKm2;
+        if (validKm2 != null && mask.ice[i]) validKm2 -= cellKm2;
+      }));
+    }
     const moves = new Map(body.transitions.map((m) => [`${m.from}>${m.to}`, { ...m }]));
     const changed = body.changed.map((row, r) => row.map((v, c) => {
       const i = r * cols + c;
@@ -1126,7 +1164,9 @@
     return {
       relabelled, removed: Math.max(a.removed, b.removed),
       body: { ...body, before: a.layer, after: b.layer, changed, transitions,
-        changed_km2: round(Math.max(0, changedKm2), 2), built_km2: round(Math.max(0, builtKm2), 2) },
+        changed_km2: round(Math.max(0, changedKm2), 2), built_km2: round(Math.max(0, builtKm2), 2),
+        ...(netKm2 != null && { net_built_km2: round(netKm2, 2) }),
+        ...(validKm2 != null && { valid_km2: round(Math.max(0, validKm2), 2) }) },
     };
   }
 
@@ -1145,17 +1185,17 @@
 
   // Encoded overlays are cached per layer, colouring and theme, so the animation does not redraw them.
   const overlayCache = new WeakMap();
-  function overlayUrl(side, changed) {
+  function overlayUrl(side, changed, valid) {
     const key = `${changed ? "changed" : state.color}|${state.theme}`;
     if (!overlayCache.has(side)) overlayCache.set(side, new Map());
     const cache = overlayCache.get(side);
-    if (!cache.has(key)) cache.set(key, gridCanvas(side, changed).toDataURL());
+    if (!cache.has(key)) cache.set(key, gridCanvas(side, changed, valid).toDataURL());
     return cache.get(key);
   }
 
-  function paintSide(target, side, changed) {
+  function paintSide(target, side, changed, valid = validGrid(side)) {
     setImage(target, "scene", side.image.src, side.image.corners, { "raster-fade-duration": 0 });
-    setImage(target, "cells", overlayUrl(side, changed), side.grid.corners,
+    setImage(target, "cells", overlayUrl(side, changed, valid), side.grid.corners,
       { "raster-opacity": state.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 });
     target.setPaintProperty("cells", "raster-opacity", state.opacity);
   }
@@ -1170,7 +1210,7 @@
       if (!side) return null;
       $("map-year").textContent = state.timeYear;
       paintSide(map, side, null);
-      renderLegend(mode, false);
+      renderLegend(mode, false, hasInvalid(validGrid(side)));
       document.querySelectorAll("#color button").forEach((b) => { b.disabled = false; });
       setFrame(side.image.corners);
       return side;
@@ -1178,8 +1218,9 @@
     const split = mode === "change" && state.layer === "split";
     const side = mode === "now" ? body : split || state.layer === "before" ? body.before : body.after;
     const changeLayer = mode === "change" && state.layer === "change";
-    paintSide(map, side, changeLayer ? body.changed : null);
-    renderLegend(mode, changeLayer);
+    const valid = changeLayer ? bothValid(body) : validGrid(side);
+    paintSide(map, side, changeLayer ? body.changed : null, valid);
+    renderLegend(mode, changeLayer, hasInvalid(valid) || (split && hasInvalid(validGrid(body.after))));
     document.querySelectorAll("#color button").forEach((b) => { b.disabled = changeLayer; });
     setFrame(side.image.corners);
     setSplit(split);
@@ -1224,6 +1265,13 @@
     return `<div class="notice prior">${lines.map((l) => `<p>${esc(l)}</p>`).join("")}${toggle}</div>`;
   }
 
+  // "Area analysed: X km²", or "Y km² of X km² assessed" when cloud or missing data left part out.
+  // Without area_km2 (saved examples) the old single figure is shown.
+  function areaLine(area, assessed) {
+    if (area == null || num(area, 0) === num(assessed, 0)) return `${esc(t("totalArea"))}: ${num(area ?? assessed, 0)} km²`;
+    return esc(t("areaAssessed").replace("{area}", num(area, 0)).replace("{valid}", num(assessed, 0)));
+  }
+
   function notices(...sides) {
     const out = [];
     if (state.data.mode === "change" && state.data.body.season_warning) out.push(t("seasonWarning"));
@@ -1255,7 +1303,7 @@
     return `
       ${sheetHead(built ? `<p class="figure"><strong>${pct(built.share)}</strong><span>${esc(t("builtShare"))}</span></p>` : "")}
       <div class="sheet-body" id="sheet-body">
-      <p class="meta">${esc(t("imageDate"))}: ${esc(body.date)} &nbsp; ${esc(t("totalArea"))}: ${num(body.stats.total_km2, 0)} km²</p>
+      <p class="meta">${esc(t("imageDate"))}: ${esc(body.date)} &nbsp; ${areaLine(body.stats.area_km2, body.stats.total_km2)}</p>
       ${notices(body)}
       ${priorNotice(state.data.prior)}
       ${bars(body.stats.groups)}
@@ -1283,17 +1331,19 @@
     const layerButton = (key) =>
       `<button type="button" data-layer="${key}" aria-selected="${state.layer === key}">${esc(t("layer" + key[0].toUpperCase() + key.slice(1)))}</button>`;
 
-    // Main figure: net built-up change over all cells, the same cells the table's shares count.
+    // Main figure: net built-up change, net_built_km2 from the API. Saved examples predate that
+    // field and fall back to the change in the built-up share over all cells, as the table counts.
     // The API's built_km2 counts only cells the model is sure of on both dates, so it is shown
     // beneath as the confident part; with clouds or coarse cells it can be far smaller.
     const builtShare = (layer) => layer.stats.groups.find((g) => g.key === "built").share;
-    const netKm2 = ((builtShare(b) - builtShare(a)) / 100) * a.stats.total_km2;
+    const netKm2 = body.net_built_km2 ?? ((builtShare(b) - builtShare(a)) / 100) * a.stats.total_km2;
     return `
       ${sheetHead(`<p class="figure"><strong>${netKm2 > 0 ? "+" : ""}${num(netKm2)} km²</strong><span>${esc(t("builtNet"))}</span></p>`)}
       <div class="sheet-body" id="sheet-body">
-      <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${esc(t("totalArea"))}: ${num(a.stats.total_km2, 0)} km²</p>
+      <p class="meta">${esc(a.date)} → ${esc(b.date)} &nbsp; ${areaLine(a.stats.area_km2, body.valid_km2 ?? a.stats.total_km2)}</p>
       <p class="meta">${esc(t("builtConfident").replace("{built}", num(body.built_km2)).replace("{changed}", num(body.changed_km2)))}</p>
       ${state.data.story ? storyBlock(state.data.story) : ""}
+      ${body.uncertain ? `<p class="notice">${esc(t("uncertain"))}</p>` : ""}
       ${notices(a, b)}
       ${priorNotice(state.data.prior)}
       <div><p class="subhead">${esc(t("layer"))}</p>
@@ -1350,7 +1400,7 @@
       return `<tr><td>${y}</td><td>${esc(p.date)}</td>${GROUPS.map((g) => `<td>${pct(groupShare(p, g))}</td>`).join("")}</tr>`;
     }).join("");
     return `
-      <p class="meta">${esc(t("yearsMeta").replace("{n}", body.years.length))}${any ? ` &nbsp; ${esc(t("totalArea"))}: ${num(any.stats.total_km2, 0)} km²` : ""}</p>
+      <p class="meta">${esc(t("yearsMeta").replace("{n}", body.years.length))}${any ? ` &nbsp; ${esc(t("totalArea"))}: ${num(any.stats.area_km2 ?? any.stats.total_km2, 0)} km²` : ""}</p>
       ${notes.map((n) => `<p class="notice">${esc(n)}</p>`).join("")}
       ${priorNotice(body.priors[state.timeYear])}
       <div><p class="subhead">${esc(t("chartTitle"))}</p>
@@ -1499,18 +1549,19 @@
   }
 
   // Entries the current layer does not draw are dimmed rather than removed.
-  function renderLegend(mode, changeLayer) {
+  function renderLegend(mode, changeLayer, invalid) {
     const legend = $("legend");
     legend.setAttribute("aria-label", t("legend"));
     legend.hidden = false;
+    const invalidRow = invalid ? `<li data-key="invalid">${swatch("invalid")}${esc(t("invalidCells"))}</li>` : "";
     if (state.color === "confidence" && !changeLayer) {
-      legend.innerHTML = `<li data-key="lowconf">${swatch("lowconf")}${esc(t("legendConfidence"))}</li>`;
+      legend.innerHTML = `<li data-key="lowconf">${swatch("lowconf")}${esc(t("legendConfidence"))}</li>${invalidRow}`;
       return;
     }
     const base = state.color === "classes" ? CLASS_ORDER : GROUPS;
     const keys = mode === "change" ? [...base, "changed"] : base;
     legend.innerHTML = keys.map((k) =>
-      `<li data-key="${k}"${changeLayer !== (k === "changed") ? ' class="off"' : ""}>${swatch(k)}${esc(t(k))}</li>`).join("");
+      `<li data-key="${k}"${changeLayer !== (k === "changed") ? ' class="off"' : ""}>${swatch(k)}${esc(t(k))}</li>`).join("") + invalidRow;
   }
 
   function colorControl(...sides) {
