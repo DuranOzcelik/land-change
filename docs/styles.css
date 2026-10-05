@@ -367,7 +367,11 @@ table.years th .swatch { display: inline-block; }
   border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
 }
 .sections { position: relative; z-index: 1; margin-top: 100vh; margin-top: 100svh; background: var(--bg); border-top: 1px solid var(--line); }
-.section { max-width: 1240px; margin: 0 auto; padding: 56px 24px; display: flex; flex-direction: column; gap: 24px; }
+/* Wide and close to the screen edges; the gutter grows a little with the screen. */
+.section {
+  max-width: 1680px; margin: 0 auto; padding: 56px clamp(16px, 3vw, 48px);
+  display: flex; flex-direction: column; gap: 24px;
+}
 .section + .section { border-top: 1px solid var(--line); }
 .section h2 { margin: 0; color: var(--ink); font-size: clamp(32px, 4vw, 48px); font-weight: 900; letter-spacing: -0.035em; line-height: 1; }
 .section-body { display: flex; flex-direction: column; gap: 16px; }
@@ -387,7 +391,12 @@ table.rankings tbody tr:hover { background: var(--wash); }
   display: inline-block; padding: 1px 8px; border-radius: var(--r-pill); background: var(--surface-2);
   color: var(--ink); font-size: 12px; font-weight: 500;
 }
-.story-group { display: flex; flex-direction: column; gap: 12px; }
+/* Examples: Turkey on its own row, then the continents two by two (three cards each). */
+.story-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
+.story-group { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.story-group.wide { grid-column: 1 / -1; }
+.story-group .stories { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.story-group.wide .stories { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .story-group h3 { margin: 8px 0 0; color: var(--ink); font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
 .story-open .tag { margin-left: 6px; }
 .stories { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -434,7 +443,13 @@ table.rankings tbody tr:hover { background: var(--wash); }
   box-shadow: 0 0 0 1px var(--line); pointer-events: none;
 }
 
-@media (max-width: 1100px) { .section-links { display: none; } }
+@media (max-width: 1100px) {
+  .section-links { display: none; }
+  /* Tablets: one group per row; the four steps as a 2 x 2 grid without connectors. */
+  .story-groups { grid-template-columns: 1fr; }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .flow li + li::before, .flow li + li::after { display: none; }
+}
 
 /* ---------- small screens: the globe stays on top, panels become a sheet ---------- */
 @media (max-width: 860px) {
@@ -449,11 +464,18 @@ table.rankings tbody tr:hover { background: var(--wash); }
   .section-links, .scroll-cue { display: none; }
   .sections { margin-top: 0; }
   .section { padding: 32px 16px; scroll-margin-top: 46svh; }   /* clear of the sticky map */
-  .stories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  /* Each group is a strip that scrolls sideways and snaps to cards, edge to edge. */
+  .story-group .stories, .story-group.wide .stories {
+    display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: min(64vw, 280px); gap: 12px;
+    overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    margin: 0 -16px; padding: 0 16px 4px; scroll-padding: 0 16px; scrollbar-width: none;
+  }
+  .story-group .stories::-webkit-scrollbar { display: none; }
+  .story { scroll-snap-align: start; }
   .story-open strong { padding: 0 12px; font-size: 15px; }
   .story-open .meta { padding: 0 12px; font-size: 12px; }
   table.rankings { font-size: 13px; }
-  .flow, .decisions { grid-template-columns: 1fr; }
+  .decisions { grid-template-columns: 1fr; }
   .flow li + li::before { left: 50%; top: -19px; width: 2px; height: 12px; }
   .flow li + li::after { left: calc(50% - 4px); top: -9px; border: 5px solid transparent; border-top: 6px solid var(--ink); border-bottom: 0; }
   .group-list .name { min-width: 120px; }
@@ -484,5 +506,11 @@ table.rankings tbody tr:hover { background: var(--wash); }
   .sheet-head { gap: 8px; padding: 0 16px 14px; touch-action: none; cursor: grab; }
   .sheet-head .figure strong { font-size: 44px; }
   .sheet-body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 4px 16px 24px; }
+}
+/* Phones: the steps stack with downward connectors; the continent column gives way (the filter stays). */
+@media (max-width: 600px) {
+  .flow { grid-template-columns: 1fr; }
+  .flow li + li::before, .flow li + li::after { display: block; }
+  table.rankings .col-continent { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

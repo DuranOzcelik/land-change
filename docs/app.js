@@ -1735,7 +1735,7 @@
       });
     const sortHead = (key, label) => {
       const on = rankView.sort === key;
-      return `<th aria-sort="${on ? (rankView.dir < 0 ? "descending" : "ascending") : "none"}">
+      return `<th class="col-${key.replace(/_/g, "-")}" aria-sort="${on ? (rankView.dir < 0 ? "descending" : "ascending") : "none"}">
         <button type="button" class="sort" data-sort="${key}">${esc(label)}${on ? (rankView.dir < 0 ? " ↓" : " ↑") : ""}</button></th>`;
     };
     if (!rows.length) return `<p class="meta">${esc(t("noResults"))}</p>`;
@@ -1747,7 +1747,7 @@
           <td>${i + 1}</td>
           <td><button type="button" class="row-link" data-city="${data.cities.indexOf(c)}">${esc(cityName(c))}</button>
             <small>${esc(countryName(c.country))}</small>${c.experimental ? ` <span class="tag">${esc(t("experimental"))}</span>` : ""}</td>
-          <td>${esc(continentName(c.continent))}</td>
+          <td class="col-continent">${esc(continentName(c.continent))}</td>
           <td>${pct(c.built_before)}</td><td>${pct(c.built_after)}</td>
           <td>${c.built_change_pts > 0 ? "+" : ""}${num(c.built_change_pts)}</td><td>${num(c.built_km2)}</td>
         </tr>`).join("")}</tbody></table>`;
@@ -1815,8 +1815,8 @@
     return `
       <p class="lead">${esc(t("storiesIntro"))}</p>
       <p class="meta">${esc(t("experimentalNote"))}</p>
-      ${groups.map((g) => `<div class="story-group"><h3>${esc(g === "turkey" ? t("groupTurkey") : continentName(g))}</h3>
-        <ul class="stories">${stories.filter((s) => s.group === g).map(card).join("")}</ul></div>`).join("")}`;
+      <div class="story-groups">${groups.map((g) => `<div class="story-group${g === "turkey" ? " wide" : ""}"><h3>${esc(g === "turkey" ? t("groupTurkey") : continentName(g))}</h3>
+        <ul class="stories">${stories.filter((s) => s.group === g).map(card).join("")}</ul></div>`).join("")}</div>`;
   }
 
   async function openStory(id) {
