@@ -15,24 +15,25 @@
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   --scrim: rgba(14, 15, 12, 0.45);
 
-  --c-agriculture: #e3a72f;
-  --c-vegetation: #2f8f4e;
-  --c-built: #e2553d;
-  --c-water: #2f6fdb;
-  --c-changed: #e0229b;
-  --c-lowconf: #6b3fd4;   /* confidence layer: opacity carries the value */
-  /* The ten EuroSAT classes: shades of their group's colour. */
-  --c-AnnualCrop: #f4d03f;
-  --c-PermanentCrop: #e8891c;
-  --c-Pasture: #b8862b;
-  --c-Forest: #1f6b3a;
-  --c-HerbaceousVegetation: #5fa868;
-  --c-Residential: #e2553d;
-  --c-Industrial: #a8322a;
-  --c-Highway: #f39a85;
-  --c-SeaLake: #1f4fae;
-  --c-River: #4fa3e8;
-  /* Map colours sit on satellite imagery, not on the page, so both themes share them. */
+  /* Map colours: the Okabe-Ito palette (colour-blind safe, free to use). The ten classes are
+     lighter and darker mixes of their group's colour. Map colours sit on satellite imagery,
+     not on the page, so both themes share them. */
+  --c-agriculture: #e69f00;
+  --c-vegetation: #009e73;
+  --c-built: #d55e00;
+  --c-water: #0072b2;
+  --c-changed: #cc79a7;
+  --c-lowconf: #f0e442;   /* confidence layer: opacity carries the value */
+  --c-AnnualCrop: #f0c566;
+  --c-PermanentCrop: #e69f00;
+  --c-Pasture: #ac7700;
+  --c-Forest: #006b4e;
+  --c-HerbaceousVegetation: #66c5ab;
+  --c-Residential: #d55e00;
+  --c-Industrial: #8f3f00;
+  --c-Highway: #e69e66;
+  --c-SeaLake: #0072b2;
+  --c-River: #56b4e9;
 
   --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --r-card: 28px;
