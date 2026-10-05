@@ -5,6 +5,12 @@
   const API = window.LAND_CHANGE_API;
   const LANGS = window.LANGS;
   const GROUPS = ["agriculture", "vegetation", "built", "water"];
+  // EuroSAT class order as in /api/meta; grid.classes holds indexes into this list.
+  const CLASSES = ["AnnualCrop", "Forest", "HerbaceousVegetation", "Highway", "Industrial",
+    "Pasture", "PermanentCrop", "Residential", "River", "SeaLake"];
+  // Legend order: classes listed group by group, as /api/meta groups them.
+  const CLASS_ORDER = ["AnnualCrop", "PermanentCrop", "Pasture", "Forest", "HerbaceousVegetation",
+    "Residential", "Industrial", "Highway", "River", "SeaLake"];
   // Share differences below this many percentage points are read as noise, not change.
   const NOISE_PTS = 1;
   const PHOTON = "https://photon.komoot.io";
@@ -27,7 +33,7 @@
     data: null,           // last API response
     layer: "split",       // what the map shows in change mode: split | before | after | change
     split: 0.5,           // handle position as a share of the map width
-    color: "groups",      // cell colouring: groups | confidence
+    color: "groups",      // cell colouring: groups | classes | confidence
     opacity: 0.55,
   };
 
@@ -572,6 +578,10 @@
       const ink = hexToRgb(cssVar("--c-lowconf"));
       return (r, c) => [...ink, confidenceAlpha(side.grid.confidence[r][c])];
     }
+    if (state.color === "classes") {
+      const colors = CLASSES.map((k) => hexToRgb(cssVar(`--c-${k}`)));
+      return (r, c) => [...colors[side.grid.classes[r][c]], 255];
+    }
     const colors = GROUPS.map((g) => hexToRgb(cssVar(`--c-${g}`)));
     return (r, c) => [...colors[side.grid.groups[r][c]], 255];
   }
@@ -641,7 +651,7 @@
 
   function classTable(classes) {
     const rows = classes.filter((c) => c.share > 0).sort((a, b) => b.share - a.share)
-      .map((c) => `<tr><td>${esc(t(c.key))}</td><td>%${num(c.share)}</td><td>${num(c.km2)} km²</td></tr>`).join("");
+      .map((c) => `<tr><td><span class="name">${swatch(c.key)}${esc(t(c.key))}</span></td><td>%${num(c.share)}</td><td>${num(c.km2)} km²</td></tr>`).join("");
     return `<details><summary>${esc(t("details"))}</summary><table><tbody>${rows}</tbody></table></details>`;
   }
 
@@ -723,7 +733,8 @@
       legend.innerHTML = `<li data-key="lowconf">${swatch("lowconf")}${esc(t("legendConfidence"))}</li>`;
       return;
     }
-    const keys = mode === "change" ? [...GROUPS, "changed"] : GROUPS;
+    const base = state.color === "classes" ? CLASS_ORDER : GROUPS;
+    const keys = mode === "change" ? [...base, "changed"] : base;
     legend.innerHTML = keys.map((k) =>
       `<li data-key="${k}"${changeLayer !== (k === "changed") ? ' class="off"' : ""}>${swatch(k)}${esc(t(k))}</li>`).join("");
   }
@@ -733,7 +744,7 @@
       `<button type="button" data-color="${key}" aria-selected="${state.color === key}">${esc(t("color" + key[0].toUpperCase() + key.slice(1)))}</button>`;
     const low = sides.map((s) => `%${num(s.stats.low_confidence_share)}`).join(" → ");
     return `<div><p class="subhead">${esc(t("colorBy"))}</p>
-      <div class="segmented small" id="color">${["groups", "confidence"].map(button).join("")}</div>
+      <div class="segmented small" id="color">${["groups", "classes", "confidence"].map(button).join("")}</div>
       <p class="meta">${esc(t("lowConfidence"))}: ${low}</p></div>`;
   }
 
