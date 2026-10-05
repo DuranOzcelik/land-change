@@ -1,6 +1,18 @@
+# Generated or local data
+backend/static/
+backend/weights/*.pt
+*.pt
+*.onnx
+*.zip
 scripts/.rankings_cache.json
-__pycache__/
 scripts/.ne_cache/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
 
 # Never commit secrets or machine files
 .env
@@ -8,10 +20,19 @@ scripts/.ne_cache/
 *.pem
 *.key
 *.p12
+*.pfx
 credentials*.json
 service-account*.json
+*-sa.json
 node_modules/
 .DS_Store
 Thumbs.db
+desktop.ini
 .vscode/
 .idea/
+
+# Working notes
+PLAN*.md
+CLAUDE.md
+GITHUB_RELEASE.md
+.claude/
