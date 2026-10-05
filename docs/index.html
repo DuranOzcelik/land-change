@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Land Change</title>
   <meta name="description" content="See how cities and land cover changed since 2016, from Sentinel-2 satellite imagery classified by a neural network.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- Only this site, the API, the geocoder and the basemap may be contacted. Styles allow inline
+       attributes (cell colours); MapLibre runs its worker from a blob. localhost is for local work. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tiles.maps.eox.at; connect-src 'self' data: blob: https://land-change-api-1098531335280.europe-west1.run.app https://photon.komoot.io https://tiles.maps.eox.at http://localhost:* http://127.0.0.1:*; worker-src blob:; child-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="vendor/maplibre-gl.css">
   <link rel="stylesheet" href="styles.css">
