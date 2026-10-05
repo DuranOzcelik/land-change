@@ -219,6 +219,8 @@ th, td { text-align: right; padding: 7px 0; border-bottom: 1px solid var(--line)
 th:first-child, td:first-child { text-align: left; }
 thead th { color: var(--muted); }
 tbody td:first-child { color: var(--ink); font-weight: 500; }
+td .name { display: inline-flex; align-items: center; gap: 8px; }
+td .trend { display: block; margin-left: 20px; color: var(--muted); font-size: 13px; font-weight: 400; }
 details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-size: 14px; }
 
 .transitions { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }

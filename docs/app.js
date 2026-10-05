@@ -5,6 +5,8 @@
   const API = window.LAND_CHANGE_API;
   const LANGS = window.LANGS;
   const GROUPS = ["agriculture", "vegetation", "built", "water"];
+  // Share differences below this many percentage points are read as noise, not change.
+  const NOISE_PTS = 1;
   const PHOTON = "https://photon.komoot.io";
   const BASEMAP = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg";
 
@@ -562,7 +564,10 @@
     const rows = a.stats.groups.map((g, i) => {
       const after = b.stats.groups[i];
       const delta = after.share - g.share;
-      return `<tr><td><span class="name">${swatch(g.key)}${esc(t(g.key))}</span></td>
+      // Shares arrive with one decimal; round so 29.3 → 28.3 counts as exactly one point.
+      const trend = Math.abs(Math.round(delta * 10) / 10) < NOISE_PTS ? "trendFlat" : delta > 0 ? "trendUp" : "trendDown";
+      return `<tr><td><span class="name">${swatch(g.key)}${esc(t(g.key))}</span>
+          <small class="trend">${esc(t(trend))}</small></td>
         <td>%${num(g.share)}</td><td>%${num(after.share)}</td>
         <td>${delta > 0 ? "+" : ""}${num(delta)}</td></tr>`;
     }).join("");
