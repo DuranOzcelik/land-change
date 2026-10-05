@@ -27,6 +27,7 @@
     data: null,           // last API response
     layer: "split",       // what the map shows in change mode: split | before | after | change
     split: 0.5,           // handle position as a share of the map width
+    color: "groups",      // cell colouring: groups | confidence
     opacity: 0.55,
   };
 
@@ -556,21 +557,36 @@
     return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   }
 
+  // Confidence (0-100) to opacity: sure cells fade out, doubtful ones stand out.
+  const CONF_CLEAR = 95, CONF_FULL = 50;
+  const confidenceAlpha = (conf) =>
+    Math.round(255 * Math.min(1, Math.max(0, (CONF_CLEAR - conf) / (CONF_CLEAR - CONF_FULL))));
+
+  // Returns (row, col) => [r, g, b, a] for the current colouring.
+  function cellColour(side, changed) {
+    if (changed) {
+      const on = hexToRgb(cssVar("--c-changed"));
+      return (r, c) => (changed[r][c] ? [...on, 255] : [0, 0, 0, 150]);
+    }
+    if (state.color === "confidence") {
+      const ink = hexToRgb(cssVar("--c-lowconf"));
+      return (r, c) => [...ink, confidenceAlpha(side.grid.confidence[r][c])];
+    }
+    const colors = GROUPS.map((g) => hexToRgb(cssVar(`--c-${g}`)));
+    return (r, c) => [...colors[side.grid.groups[r][c]], 255];
+  }
+
   // One pixel per cell, then enlarged without smoothing so cells stay crisp on the map.
-  function gridCanvas(groups, changed) {
-    const rows = groups.length, cols = groups[0].length;
+  function gridCanvas(side, changed) {
+    const rows = side.grid.rows, cols = side.grid.cols;
     const small = document.createElement("canvas");
     small.width = cols; small.height = rows;
     const ctx = small.getContext("2d");
     const img = ctx.createImageData(cols, rows);
-    const colors = GROUPS.map((g) => hexToRgb(cssVar(`--c-${g}`)));
-    const magenta = hexToRgb(cssVar("--c-changed"));
+    const colour = cellColour(side, changed);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const i = (r * cols + c) * 4;
-        const rgb = changed ? (changed[r][c] ? magenta : [0, 0, 0]) : colors[groups[r][c]];
-        img.data[i] = rgb[0]; img.data[i + 1] = rgb[1]; img.data[i + 2] = rgb[2];
-        img.data[i + 3] = changed && !changed[r][c] ? 150 : 255;
+        img.data.set(colour(r, c), (r * cols + c) * 4);
       }
     }
     ctx.putImageData(img, 0, 0);
@@ -584,7 +600,7 @@
   }
 
   function paintSide(target, side, changed) {
-    const overlay = gridCanvas(side.grid.groups, changed);
+    const overlay = gridCanvas(side, changed);
     setImage(target, "scene", side.image.src, side.image.corners, { "raster-fade-duration": 0 });
     setImage(target, "cells", overlay.toDataURL(), side.grid.corners,
       { "raster-opacity": state.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 });
@@ -598,9 +614,8 @@
     const side = mode === "now" ? body : split || state.layer === "before" ? body.before : body.after;
     const changeLayer = mode === "change" && state.layer === "change";
     paintSide(map, side, changeLayer ? body.changed : null);
-    // Legend entries the current layer does not draw are dimmed.
-    $("legend").querySelectorAll("li").forEach((li) =>
-      li.classList.toggle("off", changeLayer !== (li.dataset.key === "changed")));
+    renderLegend(mode, changeLayer);
+    document.querySelectorAll("#color button").forEach((b) => { b.disabled = changeLayer; });
     setFrame(side.image.corners);
     setSplit(split);
     if (split) {
@@ -655,6 +670,7 @@
       ${notices(body)}
       ${bars(body.stats.groups)}
       ${classTable(body.stats.classes)}
+      ${colorControl(body)}
       ${opacityControl()}
       ${footer()}`;
   }
@@ -689,6 +705,7 @@
           <p><span>${esc(t("splitRight"))}</span><strong>${esc(t("after"))} · ${esc(b.date)}</strong></p>
           <p class="hint">${esc(t("splitHint"))}</p>
         </div></div>
+      ${colorControl(a, b)}
       ${opacityControl()}
       <table><thead><tr><th></th><th>${esc(a.date.slice(0, 4))}</th><th>${esc(b.date.slice(0, 4))}</th><th>±</th></tr></thead>
         <tbody>${rows}</tbody></table>
@@ -697,19 +714,33 @@
       ${footer()}`;
   }
 
-  function renderLegend(mode) {
+  // Entries the current layer does not draw are dimmed rather than removed.
+  function renderLegend(mode, changeLayer) {
     const legend = $("legend");
-    const keys = mode === "change" ? [...GROUPS, "changed"] : GROUPS;
     legend.setAttribute("aria-label", t("legend"));
-    legend.innerHTML = keys.map((k) => `<li data-key="${k}">${swatch(k)}${esc(t(k))}</li>`).join("");
     legend.hidden = false;
+    if (state.color === "confidence" && !changeLayer) {
+      legend.innerHTML = `<li data-key="lowconf">${swatch("lowconf")}${esc(t("legendConfidence"))}</li>`;
+      return;
+    }
+    const keys = mode === "change" ? [...GROUPS, "changed"] : GROUPS;
+    legend.innerHTML = keys.map((k) =>
+      `<li data-key="${k}"${changeLayer !== (k === "changed") ? ' class="off"' : ""}>${swatch(k)}${esc(t(k))}</li>`).join("");
+  }
+
+  function colorControl(...sides) {
+    const button = (key) =>
+      `<button type="button" data-color="${key}" aria-selected="${state.color === key}">${esc(t("color" + key[0].toUpperCase() + key.slice(1)))}</button>`;
+    const low = sides.map((s) => `%${num(s.stats.low_confidence_share)}`).join(" → ");
+    return `<div><p class="subhead">${esc(t("colorBy"))}</p>
+      <div class="segmented small" id="color">${["groups", "confidence"].map(button).join("")}</div>
+      <p class="meta">${esc(t("lowConfidence"))}: ${low}</p></div>`;
   }
 
   function renderResults() {
     const { mode, body } = state.data;
     const panel = $("results");
     panel.innerHTML = mode === "now" ? renderNow(body) : renderChange(body);
-    renderLegend(mode);
     if (mode === "change") {
       $("split-tag-before").textContent = body.before.date;
       $("split-tag-after").textContent = body.after.date;
@@ -720,6 +751,13 @@
     $("opacity").addEventListener("input", (e) => {
       state.opacity = Number(e.target.value) / 100;
       maps().forEach((target) => { if (target.getLayer("cells")) target.setPaintProperty("cells", "raster-opacity", state.opacity); });
+    });
+    $("color").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b || b.disabled) return;
+      state.color = b.dataset.color;
+      document.querySelectorAll("#color button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      showOnMap();
     });
     $("again").addEventListener("click", () => { searchInput.value = ""; searchInput.focus(); });
     $("copy").addEventListener("click", async (e) => {
