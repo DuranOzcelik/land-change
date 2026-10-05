@@ -1091,9 +1091,9 @@
 
   // Applies the mask to one layer. Statistics move by whole cells from the API's own km2 values,
   // so untouched values stay exactly as the API reported them.
-  function correctLayer(layer, mask, cellKm2) {
+  // valid: cells inside the statistics. A comparison counts only cells usable on both dates.
+  function correctLayer(layer, mask, cellKm2, valid = validGrid(layer)) {
     const { rows, cols } = layer.grid;
-    const valid = validGrid(layer);
     const groups = layer.grid.groups.map((row) => row.slice());
     const classes = layer.grid.classes.map((row) => row.slice());
     const dGroup = {}, dClass = {};
@@ -1131,12 +1131,12 @@
   // Change results: corrected cells can no longer count as changed.
   function correctCompare(body, mask) {
     const cellKm2 = body.cell_km2 ?? (body.cell_m / 1000) ** 2;
-    const a = correctLayer(body.before, mask, cellKm2), b = correctLayer(body.after, mask, cellKm2);
+    const both = bothValid(body);
+    const a = correctLayer(body.before, mask, cellKm2, both), b = correctLayer(body.after, mask, cellKm2, both);
     if (a.layer === body.before && b.layer === body.after) return { body, relabelled: 0, removed: 0 };
     const cols = body.before.grid.cols;
     let changedKm2 = body.changed_km2, builtKm2 = body.built_km2, relabelled = 0;
     // The API's net built-up change and area usable on both dates lose the corrected cells too.
-    const both = bothValid(body);
     let netKm2 = body.net_built_km2, validKm2 = body.valid_km2;
     if (netKm2 != null || validKm2 != null) {
       body.before.grid.groups.forEach((row, r) => row.forEach((_, c) => {
