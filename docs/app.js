@@ -23,7 +23,8 @@
     mode: "now",          // "now" | "change"
     cell: 640,
     data: null,           // last API response
-    layer: "after",       // which date the map shows in change mode: before | after | change
+    layer: "split",       // what the map shows in change mode: split | before | after | change
+    split: 0.5,           // handle position as a share of the map width
     opacity: 0.55,
   };
 
@@ -40,6 +41,7 @@
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     $("run").textContent = t(state.mode === "now" ? "runNow" : "runChange");
     $("theme").textContent = `${t("theme")}: ${t(state.theme)}`;
+    $("split-handle").setAttribute("aria-label", t("slider"));
     showPlaceLine();
     if (state.data) renderResults();
   }
@@ -53,18 +55,19 @@
 
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const wide = () => innerWidth > 860;
+  const baseStyle = () => ({
+    version: 8,
+    projection: { type: "globe" },
+    sources: { sat: { type: "raster", tiles: [BASEMAP], tileSize: 256, maxzoom: 14 } },
+    layers: [
+      { id: "ocean", type: "background", paint: { "background-color": "#0b2942" } },
+      { id: "sat", type: "raster", source: "sat" },
+    ],
+    sky: { "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0] },
+  });
   const map = new maplibregl.Map({
     container: "map",
-    style: {
-      version: 8,
-      projection: { type: "globe" },
-      sources: { sat: { type: "raster", tiles: [BASEMAP], tileSize: 256, maxzoom: 14 } },
-      layers: [
-        { id: "ocean", type: "background", paint: { "background-color": "#0b2942" } },
-        { id: "sat", type: "raster", source: "sat" },
-      ],
-      sky: { "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0] },
-    },
+    style: baseStyle(),
     center: [32, 38],
     zoom: wide() ? 2.1 : 0.9,
     attributionControl: false,
@@ -89,9 +92,13 @@
   const stopSpin = () => { spinning = false; };
   ["mousedown", "touchstart", "wheel"].forEach((ev) => map.getCanvas().addEventListener(ev, stopSpin, { passive: true }));
 
+  function addFrame(target) {
+    target.addSource("frame", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    target.addLayer({ id: "frame", type: "line", source: "frame", paint: { "line-color": "#ffffff", "line-width": 2 } });
+  }
+
   map.on("load", () => {
-    map.addSource("frame", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-    map.addLayer({ id: "frame", type: "line", source: "frame", paint: { "line-color": "#ffffff", "line-width": 2 } });
+    addFrame(map);
     restoreFromLink();
     spin();
   });
@@ -108,7 +115,124 @@
       .catch(() => { /* the coordinate label stays */ });
   });
 
-  let marker = null;
+  /* ------------------------------------------------------------------ split view */
+
+  // MapLibre layers cannot be clipped, so the later date lives in a second, camera-locked
+  // map stacked on the first one and clipped to the right of the handle.
+  let afterMap = null;
+  let afterReady = null;
+  const maps = () => (afterMap ? [map, afterMap] : [map]);
+
+  function syncCamera() {
+    if (!afterMap || $("map-after").hidden) return;
+    afterMap.jumpTo({
+      center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(),
+      pitch: map.getPitch(), padding: map.getPadding(),
+    });
+  }
+  map.on("move", syncCamera);
+  map.on("resize", syncCamera);
+
+  function ensureAfterMap() {
+    if (afterReady) return afterReady;
+    afterMap = new maplibregl.Map({
+      container: "map-after", style: baseStyle(), interactive: false, attributionControl: false,
+      center: map.getCenter(), zoom: map.getZoom(),
+    });
+    afterMap.on("resize", syncCamera);
+    afterReady = new Promise((resolve) => afterMap.on("load", () => {
+      addFrame(afterMap);
+      if (frameCorners) setFrame(frameCorners);
+      placeMarkers();
+      syncCamera();
+      resolve(afterMap);
+    }));
+    return afterReady;
+  }
+
+  const splitHandle = $("split-handle");
+  const mapWrap = $("map-wrap");
+
+  // The handle stays on the visible map: inside the screen and, on wide screens, between the panels.
+  function splitBounds() {
+    const w = Math.max(mapWrap.clientWidth, 88);
+    let lo = 22, hi = w - 22;
+    if (wide()) {
+      lo = Math.max(lo, $("controls").getBoundingClientRect().right + 22);
+      if (!$("results").hidden) hi = Math.min(hi, $("results").getBoundingClientRect().left - 22);
+      if (hi <= lo) { lo = 22; hi = w - 22; }
+    }
+    return [lo / w, hi / w];
+  }
+
+  function moveSplit(share) {
+    const [lo, hi] = splitBounds();
+    state.split = Math.min(hi, Math.max(lo, share));
+    const pct = state.split * 100;
+    $("map-after").style.clipPath = `inset(0 0 0 ${pct}%)`;
+    splitHandle.style.left = `${pct}%`;
+    splitHandle.setAttribute("aria-valuenow", String(Math.round(pct)));
+    splitHandle.setAttribute("aria-valuetext", t("splitValue").replace("{n}", num(100 - pct, 0)));
+  }
+
+  function setSplit(on) {
+    splitHandle.hidden = !on;
+    $("map-after").hidden = !on;
+    if (!on) return;
+    if (afterMap) { afterMap.resize(); syncCamera(); }
+    moveSplit(state.split);
+  }
+
+  // Default handle position: the middle of the analysed square once the map has fitted it.
+  function centreSplit() {
+    const p = padding();
+    const w = mapWrap.clientWidth;
+    state.split = w > p.left + p.right ? (p.left + (w - p.left - p.right) / 2) / w : 0.5;
+  }
+
+  const shareAt = (clientX) => {
+    const r = mapWrap.getBoundingClientRect();
+    return (clientX - r.left) / r.width;
+  };
+  splitHandle.addEventListener("pointerdown", (e) => {
+    splitHandle.setPointerCapture(e.pointerId);
+    splitHandle.classList.add("dragging");
+    moveSplit(shareAt(e.clientX));
+  });
+  splitHandle.addEventListener("pointermove", (e) => {
+    if (splitHandle.hasPointerCapture(e.pointerId)) moveSplit(shareAt(e.clientX));
+  });
+  ["pointerup", "pointercancel"].forEach((ev) =>
+    splitHandle.addEventListener(ev, () => splitHandle.classList.remove("dragging")));
+  addEventListener("resize", () => { if (!splitHandle.hidden) moveSplit(state.split); });
+  splitHandle.addEventListener("keydown", (e) => {
+    const step = e.shiftKey || e.key.startsWith("Page") ? 0.1 : 0.02;
+    const next = {
+      ArrowLeft: state.split - step, ArrowDown: state.split - step, PageDown: state.split - step,
+      ArrowRight: state.split + step, ArrowUp: state.split + step, PageUp: state.split + step,
+      Home: 0, End: 1,
+    }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    moveSplit(next);
+  });
+
+  /* ------------------------------------------------------------------ map overlays */
+
+  const markers = new Map();
+  let frameCorners = null;
+
+  function placeMarkers() {
+    if (!state.place) return;
+    maps().forEach((target) => {
+      if (!markers.has(target)) {
+        const el = document.createElement("div");
+        el.className = "pin";
+        markers.set(target, new maplibregl.Marker({ element: el }).setLngLat([state.place.lon, state.place.lat]).addTo(target));
+      }
+      markers.get(target).setLngLat([state.place.lon, state.place.lat]);
+    });
+  }
 
   function approxSquare(lat, lon, km) {
     const dLat = km / 2 / 110.574;
@@ -117,9 +241,11 @@
   }
 
   function setFrame(corners) {
-    const src = map.getSource("frame");
-    if (!src) return;
-    src.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [...corners, corners[0]] } });
+    frameCorners = corners;
+    maps().forEach((target) => {
+      const src = target.getSource("frame");
+      if (src) src.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [...corners, corners[0]] } });
+    });
   }
 
   function fit(corners, duration = 1400) {
@@ -129,11 +255,11 @@
       { padding: padding(), duration: reducedMotion ? 0 : duration });
   }
 
-  function setImage(id, url, coordinates, paint) {
-    const src = map.getSource(id);
+  function setImage(target, id, url, coordinates, paint) {
+    const src = target.getSource(id);
     if (src) { src.updateImage({ url, coordinates }); return; }
-    map.addSource(id, { type: "image", url, coordinates });
-    map.addLayer({ id, type: "raster", source: id, paint }, "frame");
+    target.addSource(id, { type: "image", url, coordinates });
+    target.addLayer({ id, type: "raster", source: id, paint }, "frame");
   }
 
   /* ------------------------------------------------------------------ place selection */
@@ -144,13 +270,7 @@
     state.place = { lat, lon, label };
     $("hero").hidden = true;
     $("options").hidden = false;
-    if (!marker) {
-      const el = document.createElement("div");
-      el.className = "pin";
-      marker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map);
-    } else {
-      marker.setLngLat([lon, lat]);
-    }
+    placeMarkers();
     const square = approxSquare(lat, lon, Number($("size").value));
     setFrame(square);
     if (fly) fit(square);
@@ -313,9 +433,10 @@
         throw new Error(res.status === 404 ? t("errNoImagery") : res.status === 422 ? t("errInput") + detail : t("errNetwork"));
       }
       state.data = { mode: state.mode, body: await res.json(), label: state.place.label };
-      state.layer = "after";
+      state.layer = "split";
       setStatus("");
       $("results").hidden = false;
+      centreSplit();
       renderResults();
       updateLink(params);
     } catch (err) {
@@ -360,17 +481,27 @@
     return big;
   }
 
+  function paintSide(target, side, changed) {
+    const overlay = gridCanvas(side.grid.groups, changed);
+    setImage(target, "scene", side.image.src, side.image.corners, { "raster-fade-duration": 0 });
+    setImage(target, "cells", overlay.toDataURL(), side.grid.corners,
+      { "raster-opacity": state.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 });
+    target.setPaintProperty("cells", "raster-opacity", state.opacity);
+  }
+
+  // In split view the main map holds the earlier date and the clipped map the later one.
   function showOnMap() {
     const { mode, body } = state.data;
-    const side = mode === "now" ? body : state.layer === "before" ? body.before : body.after;
-    const overlay = mode === "change" && state.layer === "change"
-      ? gridCanvas(side.grid.groups, body.changed)
-      : gridCanvas(side.grid.groups, null);
-    setImage("scene", side.image.src, side.image.corners, { "raster-fade-duration": 0 });
-    setImage("cells", overlay.toDataURL(), side.grid.corners,
-      { "raster-opacity": state.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 });
-    map.setPaintProperty("cells", "raster-opacity", state.opacity);
+    const split = mode === "change" && state.layer === "split";
+    const side = mode === "now" ? body : split || state.layer === "before" ? body.before : body.after;
+    paintSide(map, side, mode === "change" && state.layer === "change" ? body.changed : null);
     setFrame(side.image.corners);
+    setSplit(split);
+    if (split) {
+      ensureAfterMap().then((target) => {
+        if (state.data && state.data.body === body && state.layer === "split") paintSide(target, body.after, null);
+      });
+    }
     return side;
   }
 
@@ -442,16 +573,13 @@
       <p class="figure"><strong>${num(body.built_km2)} km²</strong><span>${esc(t("builtGain"))}</span></p>
       <p class="meta">${esc(t("changedTotal"))}: ${num(body.changed_km2)} km²</p>
       ${notices(a, b)}
-      <div><p class="subhead">${esc(t("slider"))}</p>
-        <div class="compare" id="compare">
-          <canvas id="cmp-a" width="640" height="640"></canvas>
-          <canvas id="cmp-b" width="640" height="640"></canvas>
-          <div class="handle" id="cmp-handle"></div>
-          <span class="tag a">${esc(a.date.slice(0, 4))}</span><span class="tag b">${esc(b.date.slice(0, 4))}</span>
-          <input id="cmp-range" type="range" min="0" max="100" value="50" aria-label="${esc(t("slider"))}">
-        </div></div>
       <div><p class="subhead">${esc(t("layer"))}</p>
-        <div class="segmented small" id="layer">${["before", "after", "change"].map(layerButton).join("")}</div></div>
+        <div class="segmented small" id="layer">${["split", "before", "after", "change"].map(layerButton).join("")}</div>
+        <div class="sides" id="sides"${state.layer === "split" ? "" : " hidden"}>
+          <p><span>${esc(t("splitLeft"))}</span><strong>${esc(t("before"))} · ${esc(a.date)}</strong></p>
+          <p><span>${esc(t("splitRight"))}</span><strong>${esc(t("after"))} · ${esc(b.date)}</strong></p>
+          <p class="hint">${esc(t("splitHint"))}</p>
+        </div></div>
       ${opacityControl()}
       <table><thead><tr><th></th><th>${esc(a.date.slice(0, 4))}</th><th>${esc(b.date.slice(0, 4))}</th><th>±</th></tr></thead>
         <tbody>${rows}</tbody></table>
@@ -460,49 +588,20 @@
       ${footer()}`;
   }
 
-  function loadImage(src) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  // Satellite image with the class grid blended on top, for the drag-to-compare widget.
-  async function paintComparison(canvasId, side, cellM) {
-    const canvas = $(canvasId);
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const photo = await loadImage(side.image.src);
-    ctx.drawImage(photo, 0, 0, canvas.width, canvas.height);
-    const k = canvas.width / photo.naturalWidth;
-    const cellPx = cellM / 10;
-    const inset = cellM === 320 ? 16 : 0;
-    ctx.globalAlpha = 0.5;
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(gridCanvas(side.grid.groups, null), inset * k, inset * k,
-      side.grid.cols * cellPx * k, side.grid.rows * cellPx * k);
-    ctx.globalAlpha = 1;
-  }
-
-  function moveComparison(value) {
-    const top = $("cmp-b"), handle = $("cmp-handle");
-    if (!top) return;
-    top.style.clipPath = `inset(0 0 0 ${value}%)`;
-    handle.style.left = `${value}%`;
-  }
-
   function renderResults() {
     const { mode, body } = state.data;
     const panel = $("results");
     panel.innerHTML = mode === "now" ? renderNow(body) : renderChange(body);
+    if (mode === "change") {
+      $("split-tag-before").textContent = body.before.date;
+      $("split-tag-after").textContent = body.after.date;
+    }
     const side = showOnMap();
     fit(side.image.corners, 900);
 
     $("opacity").addEventListener("input", (e) => {
       state.opacity = Number(e.target.value) / 100;
-      map.setPaintProperty("cells", "raster-opacity", state.opacity);
+      maps().forEach((target) => { if (target.getLayer("cells")) target.setPaintProperty("cells", "raster-opacity", state.opacity); });
     });
     $("again").addEventListener("click", () => { searchInput.value = ""; searchInput.focus(); });
     $("copy").addEventListener("click", async (e) => {
@@ -510,15 +609,12 @@
     });
 
     if (mode === "change") {
-      paintComparison("cmp-a", body.before, body.cell_m);
-      paintComparison("cmp-b", body.after, body.cell_m);
-      moveComparison(50);
-      $("cmp-range").addEventListener("input", (e) => moveComparison(Number(e.target.value)));
       $("layer").addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
         state.layer = b.dataset.layer;
         document.querySelectorAll("#layer button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+        $("sides").hidden = state.layer !== "split";
         showOnMap();
       });
     }

@@ -53,8 +53,39 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-#map { position: fixed; inset: 0; background: var(--bg); }
+.map-wrap { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+#map, #map-after { position: absolute; inset: 0; background: var(--bg); }
+#map-after[hidden] { display: none; }
+#map-after, #map-after * { pointer-events: none; }
 .maplibregl-ctrl-attrib { display: none; }
+
+/* ---------- split view handle: 44px touch strip with a thin visible line ---------- */
+.split-handle {
+  position: absolute; top: 0; bottom: 0; left: 50%; z-index: 1; width: 44px;
+  transform: translateX(-50%); cursor: ew-resize; touch-action: none; outline: none;
+}
+.split-handle[hidden] { display: none; }
+.split-line {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%);
+  background: var(--surface); box-shadow: 0 0 0 1px var(--line);
+}
+.split-knob {
+  position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%);
+  border-radius: 50%; background: var(--surface); box-shadow: 0 0 0 1px var(--ink);
+}
+.split-knob::before, .split-knob::after {
+  content: ""; position: absolute; top: 12px; bottom: 12px; width: 2px; border-radius: 1px; background: var(--ink);
+}
+.split-knob::before { left: 15px; } .split-knob::after { right: 15px; }
+.split-handle:focus-visible .split-knob,
+.split-handle.dragging .split-knob { box-shadow: 0 0 0 2px var(--ink), 0 0 0 5px var(--accent); }
+.split-tag {
+  position: absolute; top: calc(50% + 30px); padding: 3px 10px; white-space: nowrap;
+  border-radius: var(--r-pill); background: var(--surface); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.split-tag.before { right: calc(50% + 8px); }
+.split-tag.after { left: calc(50% + 8px); }
 
 /* ---------- top bar ---------- */
 .topbar {
@@ -184,12 +215,12 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 .notice { margin: 0; padding: 12px 14px; border-radius: var(--r-field); background: var(--wash); color: var(--ink); font-size: 14px; }
 .limits { margin: 0; font-size: 13px; color: var(--muted); }
 
-.compare { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1; background: var(--surface-2); touch-action: none; }
-.compare canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.compare .handle { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); pointer-events: none; }
-.compare .tag { position: absolute; bottom: 10px; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(14,15,12,.7); color: #fff; font-size: 12px; font-weight: 500; }
-.compare .tag.a { left: 10px; } .compare .tag.b { right: 10px; }
-.compare input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.sides { display: grid; gap: 6px; margin-top: 12px; font-size: 14px; }
+.sides[hidden] { display: none; }
+.sides p { margin: 0; display: flex; justify-content: space-between; gap: 12px; }
+.sides span { color: var(--muted); }
+.sides strong { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.sides .hint { display: block; margin-top: 2px; }
 
 .range { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--ink); }
 .range input { flex: 1; accent-color: var(--ink); }
@@ -206,7 +237,8 @@ details summary { cursor: pointer; color: var(--ink); font-weight: 500; font-siz
 /* ---------- small screens: the globe stays on top, panels become a sheet ---------- */
 @media (max-width: 860px) {
   body { overflow: auto; }
-  #map { position: sticky; top: 0; height: 46vh; inset: auto; }
+  .map-wrap { position: sticky; top: 0; height: 46vh; inset: auto; }
+  .segmented.small button { padding: 6px 8px; }
   .topbar { padding: 12px 16px; }
   .stage { position: relative; inset: auto; flex-direction: column; padding: 24px 16px 16px; gap: 16px; pointer-events: auto; background: var(--bg); }
   .wordmark { font-size: 17px; padding: 6px 12px; }

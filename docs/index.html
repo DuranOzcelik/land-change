@@ -12,7 +12,17 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="map" aria-label="Globe"></div>
+  <div class="map-wrap" id="map-wrap">
+    <div id="map" aria-label="Globe"></div>
+    <div id="map-after" aria-hidden="true" hidden></div>
+    <div class="split-handle" id="split-handle" role="slider" tabindex="0"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" hidden>
+      <span class="split-line"></span>
+      <span class="split-knob"></span>
+      <span class="split-tag before" id="split-tag-before"></span>
+      <span class="split-tag after" id="split-tag-after"></span>
+    </div>
+  </div>
 
   <header class="topbar">
     <a class="wordmark" href="./" data-i18n="title">Land Change</a>
