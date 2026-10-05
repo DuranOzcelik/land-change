@@ -32,7 +32,7 @@
     cell: 640,
     data: null,           // last API response
     layer: "split",       // what the map shows in change mode: split | before | after | change
-    split: 0.5,           // handle position as a share of the map width
+    split: 0.5,           // handle position as a share of the analysed square's width on screen
     color: "groups",      // cell colouring: groups | classes | confidence
     prior: store.get("prior") !== "off",   // apply the Natural Earth correction
     opacity: 0.55,
@@ -279,27 +279,44 @@
   const splitHandle = $("split-handle");
   const mapWrap = $("map-wrap");
 
-  // The handle stays on the visible map: inside the screen and, on wide screens, between the panels.
-  function splitBounds() {
-    const w = Math.max(mapWrap.clientWidth, 88);
+  // The handle lives on the analysed square: its position is a share of the square's width, so it
+  // follows the square when the map is panned or zoomed. It also stays on the visible map: inside
+  // the screen and, on wide screens, between the panels. Returns the range in map pixels.
+  function splitRange() {
+    const w = Math.max(mapWrap.clientWidth, 88), h = mapWrap.clientHeight;
     let lo = 22, hi = w - 22;
     if (wide()) {
       lo = Math.max(lo, $("controls").getBoundingClientRect().right + 22);
       if (!$("results").hidden) hi = Math.min(hi, $("results").getBoundingClientRect().left - 22);
       if (hi <= lo) { lo = 22; hi = w - 22; }
     }
-    return [lo / w, hi / w];
+    let top = 0, bottom = h;
+    if (frameCorners) {
+      const pts = frameCorners.map((c) => map.project(c));
+      const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+      const left = Math.max(lo, Math.min(...xs)), right = Math.min(hi, Math.max(...xs));
+      // Keep the visible-map range when the square is off screen or too narrow to hold the knob.
+      if (right - left >= 44) { lo = left; hi = right; }
+      top = Math.max(0, Math.min(...ys));
+      bottom = Math.min(h, Math.max(...ys));
+      if (bottom - top < 88) { top = 0; bottom = h; }
+    }
+    return { lo, hi, top, bottom };
   }
 
   function moveSplit(share) {
-    const [lo, hi] = splitBounds();
-    state.split = Math.min(hi, Math.max(lo, share));
-    const pct = state.split * 100;
-    $("map-after").style.clipPath = `inset(0 0 0 ${pct}%)`;
-    splitHandle.style.left = `${pct}%`;
-    splitHandle.setAttribute("aria-valuenow", String(Math.round(pct)));
+    state.split = Math.min(1, Math.max(0, share));
+    const r = splitRange();
+    const x = r.lo + state.split * (r.hi - r.lo);
+    $("map-after").style.clipPath = `inset(0 0 0 ${x}px)`;
+    splitHandle.style.left = `${x}px`;
+    splitHandle.style.top = `${r.top}px`;
+    splitHandle.style.bottom = `${mapWrap.clientHeight - r.bottom}px`;
+    const pct = Math.round(state.split * 100);
+    splitHandle.setAttribute("aria-valuenow", String(pct));
     splitHandle.setAttribute("aria-valuetext", t("splitValue").replace("{n}", num(100 - pct, 0)));
   }
+  map.on("move", () => { if (!splitHandle.hidden) moveSplit(state.split); });
 
   function setSplit(on) {
     splitHandle.hidden = !on;
@@ -309,16 +326,12 @@
     moveSplit(state.split);
   }
 
-  // Default handle position: the middle of the analysed square once the map has fitted it.
-  function centreSplit() {
-    const p = padding();
-    const w = mapWrap.clientWidth;
-    state.split = w > p.left + p.right ? (p.left + (w - p.left - p.right) / 2) / w : 0.5;
-  }
+  // Default handle position: the middle of the analysed square.
+  function centreSplit() { state.split = 0.5; }
 
   const shareAt = (clientX) => {
-    const r = mapWrap.getBoundingClientRect();
-    return (clientX - r.left) / r.width;
+    const r = splitRange();
+    return (clientX - mapWrap.getBoundingClientRect().left - r.lo) / Math.max(1, r.hi - r.lo);
   };
   splitHandle.addEventListener("pointerdown", (e) => {
     splitHandle.setPointerCapture(e.pointerId);
@@ -328,6 +341,11 @@
   splitHandle.addEventListener("pointermove", (e) => {
     if (splitHandle.hasPointerCapture(e.pointerId)) moveSplit(shareAt(e.clientX));
   });
+  // The handle sits on the map, so the wheel over it zooms the map instead of scrolling the page.
+  splitHandle.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    map.getCanvas().dispatchEvent(new WheelEvent("wheel", e));
+  }, { passive: false });
   ["pointerup", "pointercancel"].forEach((ev) =>
     splitHandle.addEventListener(ev, () => splitHandle.classList.remove("dragging")));
   addEventListener("resize", () => { if (!splitHandle.hidden) moveSplit(state.split); });
