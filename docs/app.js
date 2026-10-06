@@ -53,7 +53,8 @@
 
   function applyLanguage() {
     document.documentElement.lang = state.lang;
-    document.title = t("title");
+    document.title = t("pageTitle");
+    document.querySelector('meta[name="description"]').content = t("pageDescription");
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     document.querySelectorAll("[data-i18n-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nLabel)); });
