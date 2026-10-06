@@ -12,6 +12,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
@@ -31,6 +32,8 @@ ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").spli
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
                    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
                    allow_methods=["GET"], allow_headers=["*"])
+# Cloud Run does not compress responses; scripts, styles and JSON shrink several times with gzip.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 limiter = RateLimiter(limit=int(os.environ.get("RATE_LIMIT", "90")),
                       window_s=int(os.environ.get("RATE_WINDOW_S", "600")))

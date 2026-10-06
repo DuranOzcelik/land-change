@@ -27,6 +27,7 @@ sys.modules["app.model"] = stub
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app import analysis, imagery, main  # noqa: E402
+from app.security import SECURITY_HEADERS  # noqa: E402
 
 
 def fake_scene(grid, target, **_):
@@ -99,3 +100,14 @@ def test_timeseries_endpoint():
     assert res.status_code == 200, res.text
     points = res.json()["points"]
     assert [p["year"] for p in points] == [2023, 2024, 2025] and "image" not in points[0]
+
+
+def test_gzip_keeps_security_headers():
+    gzip = {"Accept-Encoding": "gzip"}
+    big = client.get("/api/analyze", params={**PLACE, "when": "2025"}, headers=gzip)
+    assert big.status_code == 200 and big.headers["content-encoding"] == "gzip"
+    small = client.get("/health", headers=gzip)
+    assert small.status_code == 200 and "content-encoding" not in small.headers
+    for res in (big, small):
+        for name, value in SECURITY_HEADERS.items():
+            assert res.headers[name] == value, name
