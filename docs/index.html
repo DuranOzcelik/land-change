@@ -48,7 +48,7 @@
 <body>
   <div class="map-wrap" id="map-wrap">
     <canvas id="stars" aria-hidden="true"></canvas>
-    <div id="map" aria-label="Globe"></div>
+    <div id="map" data-i18n-label="mapLabel" aria-label="Globe"></div>
     <div id="map-after" aria-hidden="true" hidden></div>
     <div class="split-handle" id="split-handle" role="slider" tabindex="0"
          aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" hidden>
@@ -63,10 +63,10 @@
 
   <header class="topbar">
     <a class="wordmark" href="./" data-i18n="title">Land Change</a>
-    <nav class="section-links" data-i18n-label="exploreLabel">
-      <button class="pill-button ghost" type="button" data-scroll="examples" data-i18n="examplesTitle"></button>
-      <button class="pill-button ghost" type="button" data-scroll="rankings" data-i18n="rankingsTitle"></button>
-      <button class="pill-button ghost" type="button" data-scroll="about" data-i18n="aboutTitle"></button>
+    <nav class="section-links" data-i18n-label="exploreLabel" aria-label="Explore">
+      <button class="pill-button ghost" type="button" data-scroll="examples" data-i18n="examplesTitle">Example analyses</button>
+      <button class="pill-button ghost" type="button" data-scroll="rankings" data-i18n="rankingsTitle">City ranking</button>
+      <button class="pill-button ghost" type="button" data-scroll="about" data-i18n="aboutTitle">How it works</button>
     </nav>
     <div class="topbar-tools">
       <label class="visually-hidden" for="lang" data-i18n="language">Language</label>
@@ -79,14 +79,16 @@
     <section class="left">
       <div class="hero" id="hero">
         <h1 data-i18n="hero">How are cities growing?</h1>
-        <p data-i18n="heroSub"></p>
+        <p data-i18n="heroSub">Pick a place and see, from satellite images, how built-up land, farmland and forest have changed over the years.</p>
+        <noscript><p>This site needs JavaScript and WebGL to show the globe and run analyses. The source code is on
+          <a href="https://github.com/DuranOzcelik/land-change">GitHub</a>.</p></noscript>
       </div>
 
       <form class="card controls" id="controls" autocomplete="off">
         <div class="search">
           <input id="search" type="search" data-i18n-placeholder="searchPlaceholder" aria-controls="suggestions" aria-autocomplete="list">
           <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
-          <p class="hint" id="place-line" data-i18n="searchHint"></p>
+          <p class="hint" id="place-line" data-i18n="searchHint">or click a point on the globe</p>
         </div>
 
         <div class="options" id="options" hidden>
@@ -159,25 +161,47 @@
     <section class="card results" id="results" hidden aria-live="polite"></section>
   </main>
 
-  <button class="scroll-cue" type="button" data-scroll="examples" data-i18n="sectionsCue"></button>
+  <button class="scroll-cue" type="button" data-scroll="examples" data-i18n="sectionsCue">Example analyses, the city ranking and how it works are below</button>
 
-  <!-- Below the map: always-open sections, filled from the data files by app.js. -->
+  <!-- Below the map: always-open sections, filled from the data files by app.js. The English text
+       already in this file (headings, "How it works", credit) is the same as the "en" values in i18n.js,
+       so it reads without scripts; app.js replaces it in the chosen language. -->
   <div class="sections">
     <section class="section" id="examples" aria-labelledby="examples-title">
-      <h2 id="examples-title" data-i18n="examplesTitle"></h2>
+      <h2 id="examples-title" data-i18n="examplesTitle">Example analyses</h2>
       <div class="section-body" id="examples-body"></div>
     </section>
     <section class="section" id="rankings" aria-labelledby="rankings-title">
-      <h2 id="rankings-title" data-i18n="rankingsTitle"></h2>
+      <h2 id="rankings-title" data-i18n="rankingsTitle">City ranking</h2>
       <div class="section-body" id="rankings-body"></div>
     </section>
     <section class="section" id="about" aria-labelledby="about-title">
-      <h2 id="about-title" data-i18n="aboutTitle"></h2>
-      <div class="section-body" id="about-body"></div>
+      <h2 id="about-title" data-i18n="aboutTitle">How it works</h2>
+      <div class="section-body" id="about-body">
+        <p class="lead">Land Change downloads the Sentinel-2 satellite image of the chosen place, cuts it into 64×64-pixel squares, classifies them with a ResNet18 model trained on the EuroSAT dataset, and reports the land cover or the change between two dates.</p>
+        <div><p class="subhead">Flow</p><ol class="flow">
+            <li><strong>Pick a place</strong><span>A point is picked on the globe or searched for; a square of 5 to 25 km around it is analysed.</span></li>
+            <li><strong>Download the image</strong><span>The cloud-free Sentinel-2 image closest to the requested day is downloaded from the Microsoft Planetary Computer catalogue.</span></li>
+            <li><strong>Classify</strong><span>The image is cut into 64×64-pixel squares (640 m at 10 m resolution); the model assigns each one of EuroSAT&#39;s 10 classes and reports its confidence.</span></li>
+            <li><strong>Compare</strong><span>The two dates are compared cell by cell; the changed area and the transitions between groups are calculated in km².</span></li>
+        </ol></div>
+        <div><p class="subhead">Limits</p><ul class="limits-list">
+            <li>Every value shown is a model estimate, not a measurement.</li>
+            <li>Areas are not measurements but approximations counted from cells, and they depend on the chosen scale; larger cells give coarser results, and the same place can give different figures at different scales.</li>
+            <li>EuroSAT has no greenhouse or bare-soil class; greenhouses can show up as built-up, bare soil as built-up or agriculture.</li>
+            <li>The model was trained on European images; results outside Europe are less reliable.</li>
+            <li>Dates before mid-2015 are not supported (before Sentinel-2).</li>
+            <li>The model decides on a 640-metre window; the 320 m scale makes the map finer but not the model sharper, so small changes may not show.</li>
+            <li>Clouds, shadows and seasonal differences can show change that is not there.</li>
+            <li>Globe basemap: Sentinel-2 cloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data).</li>
+            <li>Privacy: no accounts, cookies or tracking. Search text goes to Photon (komoot) for place search and the chosen location to this project&#39;s API for the analysis; the globe basemap loads from EOX servers. The browser stores only your language, theme and correction choice.</li>
+        </ul></div>
+        <p class="sources"><a href="https://github.com/DuranOzcelik/land-change">Source code on GitHub</a></p>
+      </div>
     </section>
   </div>
 
-  <footer class="credit"><span data-i18n="credit"></span></footer>
+  <footer class="credit"><span data-i18n="credit">Sentinel-2 cloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data)</span></footer>
 
   <script src="vendor/maplibre-gl.js"></script>
   <script src="config.js"></script>

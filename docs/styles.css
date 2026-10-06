@@ -213,6 +213,7 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 }
 .hero p { margin: 16px 0 0; max-width: 34ch; color: var(--on-space-text); font-size: 18px; }
 .hero[hidden] { display: none; }
+.hero a { color: inherit; }
 
 .card {
   background: var(--surface); border-radius: var(--r-card);

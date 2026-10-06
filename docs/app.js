@@ -14,6 +14,7 @@
   // Share differences below this many percentage points are read as noise, not change.
   const NOISE_PTS = 1;
   const PHOTON = "https://photon.komoot.io";
+  const REPO = "https://github.com/DuranOzcelik/land-change";
   const BASEMAP = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg";
 
   const $ = (id) => document.getElementById(id);
@@ -1962,7 +1963,8 @@
       <p class="lead">${esc(t("aboutIntro"))}</p>
       <div><p class="subhead">${esc(t("aboutFlow"))}</p><ol class="flow">${steps}</ol></div>
       <div><p class="subhead">${esc(t("aboutDecisions"))}</p><div class="decisions">${decisions}</div></div>
-      <div><p class="subhead">${esc(t("aboutLimits"))}</p><ul class="limits-list">${limits}</ul></div>`;
+      <div><p class="subhead">${esc(t("aboutLimits"))}</p><ul class="limits-list">${limits}</ul></div>
+      <p class="sources"><a href="${REPO}">${esc(t("sourceCode"))}</a></p>`;
   }
 
   /* ------------------------------------------------------------------ shareable link */
