@@ -162,8 +162,11 @@ Open `http://localhost:8080`. Opened from localhost, the page uses the public AP
 cd backend
 rm -rf static && cp -r ../docs static
 gcloud run deploy land-change --source . --region europe-west1 \
-  --allow-unauthenticated --max-instances 1 --memory 2Gi --cpu 2 --timeout 300 --concurrency 4
+  --allow-unauthenticated --max-instances 1 --memory 2Gi --cpu 2 --timeout 300 --concurrency 40 \
+  --service-account land-change-run@PROJECT_ID.iam.gserviceaccount.com
 ```
+
+The service account is a separate runtime identity with no roles granted.
 
 ## Data and credits
 
