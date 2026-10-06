@@ -37,7 +37,11 @@ def fake_scene(grid, target, **_):
         rgb[: n // 2, : n // 2] = 220                        # top-left quarter gets built up
     water = np.zeros((n // 4, n // 4), dtype=bool)
     water[-(n // 16):] = True                                # a strip of sea at the bottom
-    return {"rgb": rgb, "water": water, "nodata": np.zeros_like(water),
+    cloud = np.zeros_like(water)
+    if target.year == 2020:
+        cloud[: n // 8, n // 8:] = True                      # clouds over the top-right half
+        rgb[: n // 2, n // 2:] = 250
+    return {"rgb": rgb, "water": water, "nodata": np.zeros_like(water), "cloud": cloud,
             "date": target.isoformat(), "bad": 0.0}
 
 
@@ -100,6 +104,63 @@ def test_timeseries_endpoint():
     assert res.status_code == 200, res.text
     points = res.json()["points"]
     assert [p["year"] for p in points] == [2023, 2024, 2025] and "image" not in points[0]
+
+
+def test_numbers_do_not_depend_on_map_scale():
+    answers = [client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2025", "cell_m": c}).json()
+               for c in (320, 640, 1280)]
+    assert len({(a["built_km2"], a["net_built_km2"], a["changed_km2"]) for a in answers}) == 1
+    assert [a["before"]["grid"]["rows"] for a in answers] == [61, 31, 15]
+    assert answers[0]["before"]["stats"] == answers[2]["before"]["stats"]
+
+
+def test_cloudy_cells_are_left_out():
+    clear = client.get("/api/analyze", params={**PLACE, "when": "2016"}).json()
+    cloudy = client.get("/api/analyze", params={**PLACE, "when": "2020"}).json()
+    assert cloudy["stats"]["total_km2"] < clear["stats"]["total_km2"] == clear["stats"]["area_km2"]
+    assert cloudy["stats"]["area_km2"] == clear["stats"]["area_km2"]
+    built = {g["key"]: g["km2"] for g in cloudy["stats"]["groups"]}["built"]
+    assert built == 0                                        # bright clouds must not count as built-up
+    assert 0 in cloudy["grid"]["valid"][0] and 1 in cloudy["grid"]["valid"][0]
+
+    change = client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2020"}).json()
+    assert change["built_km2"] == 0 and change["net_built_km2"] == 0
+    assert change["valid_km2"] == change["before"]["stats"]["total_km2"] < change["before"]["stats"]["area_km2"]
+
+
+def test_consistent_headline_is_not_flagged():
+    body = client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2025"}).json()
+    assert body["uncertain"] is False and abs(body["built_km2"] - body["net_built_km2"]) < 1
+
+
+def test_security_headers_and_closed_docs():
+    res = client.get("/health")
+    assert res.headers["x-frame-options"] == "DENY" and res.headers["x-content-type-options"] == "nosniff"
+    assert "frame-ancestors" in res.headers["content-security-policy"]
+    assert client.get("/docs").status_code == 404 and client.get("/openapi.json").status_code == 404
+
+
+def test_cors_only_for_known_origins():
+    foreign = client.get("/api/meta", headers={"Origin": "https://example.org"})
+    local = client.get("/api/meta", headers={"Origin": "http://localhost:8080"})
+    assert "access-control-allow-origin" not in foreign.headers
+    assert local.headers["access-control-allow-origin"] == "http://localhost:8080"
+
+
+def test_rate_limit():
+    from app.security import RateLimiter, client_address
+    limiter = RateLimiter(limit=3, window_s=60)
+    assert [limiter.allow("a")[0] for _ in range(4)] == [True, True, True, False]
+    assert limiter.allow("b")[0] is True
+    assert client_address({"x-forwarded-for": "6.6.6.6, 203.0.113.9"}) == "203.0.113.9"
+
+    main.limiter = RateLimiter(limit=2, window_s=60)
+    try:
+        codes = [client.get("/api/dates", params={**PLACE, "year": 1999}).status_code for _ in range(3)]
+        assert codes[:2] == [422, 422] and codes[2] == 429
+        assert client.get("/health").status_code == 200       # only the API is throttled
+    finally:
+        main.limiter = RateLimiter(limit=10_000, window_s=60)
 
 
 def test_gzip_keeps_security_headers():
