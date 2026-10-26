@@ -2005,13 +2005,16 @@
     const { stories } = await loadData("stories");
     const card = (s) => {
       const text = s.description[state.lang] || "";
+      // A real link to the example's own page (so search engines and new-tab opens reach it);
+      // a plain click still opens the report in place, as before.
+      const href = `${state.lang === "tr" ? "/tr" : ""}/examples/${esc(s.id)}/`;
       return `<li class="story">
-        <button type="button" class="story-open" data-story="${esc(s.id)}">
+        <a class="story-open" href="${href}" data-story="${esc(s.id)}">
           <img src="${BASE}data/stories/${esc(s.id)}-thumb.jpg" alt="" loading="lazy" width="320" height="240">
           <strong>${esc(storyTitle(s))}</strong>
           <span class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km
             ${s.experimental ? `<span class="tag">${esc(t("experimental"))}</span>` : ""}</span>
-        </button>
+        </a>
         ${text ? `<p>${esc(text)}</p>` : ""}
         ${storySources(s)}</li>`;
     };
@@ -2054,7 +2057,11 @@
 
   $("examples-body").addEventListener("click", (e) => {
     const b = e.target.closest("[data-story]");
-    if (b) openStory(b.dataset.story).catch(() => setStatus(t("errData"), true));
+    if (!b) return;
+    // A modified click (new tab, new window, middle click) follows the link as usual.
+    if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    openStory(b.dataset.story).catch(() => setStatus(t("errData"), true));
   });
 
   /* ------------------------------------------------------------------ how it works */

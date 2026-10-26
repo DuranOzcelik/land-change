@@ -76,6 +76,24 @@
   --danger: #ff8b8f;
   --shadow: none;
 }
+/* The static pages run no script, so they cannot read or set data-theme: they follow the OS
+   setting directly. app.js always sets data-theme itself, so an explicit light choice there
+   still wins over this. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #03050a;
+    --surface: #0a120d;
+    --surface-2: #142219;
+    --wash: #183319;
+    --ink: #e2f6d5;
+    --text: #c3d3bb;
+    --muted: #8da38f;
+    --line: rgba(226, 246, 213, 0.16);
+    --on-accent: #0d2100;
+    --danger: #ff8b8f;
+    --shadow: none;
+  }
+}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -426,7 +444,8 @@ table.rankings td .tag { margin: 2px 4px 0 0; }
 .story p { margin: 0; font-size: 14px; }
 .story-open {
   display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 0 0 14px; border: 0; cursor: pointer;
-  text-align: left; color: var(--ink); background: var(--surface-2); border-radius: var(--r-card); overflow: hidden;
+  text-align: left; text-decoration: none; color: var(--ink); background: var(--surface-2);
+  border-radius: var(--r-card); overflow: hidden;
 }
 .story-open img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--line); }
 .story-open strong { padding: 0 16px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
@@ -536,3 +555,42 @@ table.rankings td .tag { margin: 2px 4px 0 0; }
   table.rankings .col-continent { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- static pages: scripts/build_pages.py (example analyses, examples index) ----------
+   No globe, no results panel: a plain article on the page background, the same tokens and type. */
+.page { background: var(--bg); }
+.page-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 24px; max-width: 1680px; margin: 0 auto;
+}
+.page-bar nav { display: flex; gap: 8px; align-items: center; }
+.page-main {
+  max-width: 880px; margin: 0 auto; padding: 24px clamp(16px, 3vw, 48px) 56px;
+  display: flex; flex-direction: column; gap: 40px;
+}
+.page-article { display: flex; flex-direction: column; gap: 32px; }
+.page-article h1 { margin: 0 0 12px; color: var(--ink); font-size: clamp(28px, 5vw, 40px); font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
+.page-article h2 { margin: 0 0 12px; color: var(--ink); font-size: 22px; font-weight: 700; letter-spacing: -0.015em; }
+.page-article section { display: flex; flex-direction: column; gap: 10px; }
+.page-head { display: grid; grid-template-columns: 1fr 240px; gap: 24px; align-items: start; }
+.page-head img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: var(--r-card); background: var(--surface-2); }
+.page-dates { display: flex; flex-wrap: wrap; gap: 20px; margin: 0; }
+.page-dates div { display: flex; flex-direction: column; gap: 2px; }
+.page-dates dt { font-size: 13px; color: var(--muted); }
+.page-dates dd { margin: 0; font-weight: 600; color: var(--ink); }
+.page-cta { display: inline-block; text-decoration: none; }
+.page-others { padding-top: 24px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.page-others h2 { margin: 0; color: var(--ink); font-size: 18px; font-weight: 700; }
+.page-others ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 16px; }
+.page-others a, .page-foot a, .sources a { color: var(--ink); }
+.page-foot { max-width: 1680px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 48px) 40px; color: var(--muted); font-size: 13px; }
+.page-foot p { margin: 0 0 4px; }
+/* Group swatches on the static pages: no inline style (the page runs no scripts). */
+.swatch.c-agriculture { background: var(--c-agriculture); }
+.swatch.c-vegetation { background: var(--c-vegetation); }
+.swatch.c-built { background: var(--c-built); }
+.swatch.c-water { background: var(--c-water); }
+@media (max-width: 600px) {
+  .page-head { grid-template-columns: 1fr; }
+  .page-head img { order: -1; max-width: 320px; }
+}

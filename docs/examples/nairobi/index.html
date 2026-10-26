@@ -1,0 +1,158 @@
+<!doctype html>
+<!-- Built by scripts/build_pages.py; edit the source files, not this one. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nairobi: 4.5 km² became built-up, 2016–2025 | Land Change</title>
+  <link rel="canonical" href="https://greenloss.com/examples/nairobi/">
+  <link rel="alternate" hreflang="en" href="https://greenloss.com/examples/nairobi/">
+  <link rel="alternate" hreflang="tr" href="https://greenloss.com/tr/examples/nairobi/">
+  <link rel="alternate" hreflang="x-default" href="https://greenloss.com/examples/nairobi/">
+  <meta name="description" content="Sentinel-2 images of Nairobi from 2016 and 2025, classified by a neural network: 4.5 km² became built-up, net change in built-up area +18.1 km².">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tiles.maps.eox.at; connect-src 'self' data: blob: https://land-change-1098531335280.europe-west1.run.app https://photon.komoot.io https://tiles.maps.eox.at http://localhost:* http://127.0.0.1:*; worker-src blob:; child-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#163300">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="tr_TR">
+  <meta property="og:site_name" content="Land Change">
+  <meta property="og:title" content="Nairobi: 4.5 km² became built-up, 2016–2025 | Land Change">
+  <meta property="og:description" content="Sentinel-2 images of Nairobi from 2016 and 2025, classified by a neural network: 4.5 km² became built-up, net change in built-up area +18.1 km².">
+  <meta property="og:url" content="https://greenloss.com/examples/nairobi/">
+  <meta property="og:image" content="https://greenloss.com/data/stories/nairobi-thumb.jpg">
+  <meta property="og:image:width" content="480">
+  <meta property="og:image:height" content="480">
+  <meta property="og:image:alt" content="Sentinel-2 satellite image of Nairobi on 2025-01-07">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Nairobi: land change, 2016–2025",
+    "url": "https://greenloss.com/examples/nairobi/",
+    "description": "Sentinel-2 images of Nairobi from 2016 and 2025, classified by a neural network: 4.5 km² became built-up, net change in built-up area +18.1 km².",
+    "inLanguage": "en",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Land Change",
+      "url": "https://greenloss.com/"
+    },
+    "image": "https://greenloss.com/data/stories/nairobi-thumb.jpg"
+  }
+  </script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="page">
+  <header class="page-bar">
+    <a class="wordmark" href="/">Land Change</a>
+    <nav aria-label="Explore">
+      <a class="pill-button ghost" href="/examples/">Example analyses</a>
+      <a class="pill-button ghost" href="/tr/examples/nairobi/" hreflang="tr" lang="tr">Türkçe</a>
+    </nav>
+  </header>
+  <main class="page-main">
+    <article class="page-article">
+      <div class="page-head">
+        <div class="page-intro">
+          <h1>Nairobi: land change, 2016–2025</h1>
+          <p class="lead">Two Sentinel-2 satellite images of a 20 km square around Nairobi, from 2016-02-14 and 2025-01-07, were classified by a ResNet18 model trained on EuroSAT. Every 640 m cell is put in one of four land-cover groups, and the two dates are compared cell by cell.</p>
+          
+          
+          <dl class="page-dates">
+            <div><dt>Before</dt><dd>2016-02-14</dd></div>
+            <div><dt>After</dt><dd>2025-01-07</dd></div>
+            <div><dt>Area analysed</dt><dd>394 km²</dd></div>
+          </dl>
+          <p><a class="pill-button primary page-cta" href="/#lat=-1.28900&amp;lon=36.81728&amp;size_km=20&amp;cell_m=640&amp;before=2016&amp;after=2025&amp;story=nairobi&amp;mode=change&amp;q=Nairobi">Open on the map</a></p>
+        </div>
+        <img src="/data/stories/nairobi-thumb.jpg" alt="Sentinel-2 satellite image of Nairobi on 2025-01-07" width="480" height="480">
+      </div>
+
+      <section>
+        <h2>Change</h2>
+        <p class="figure"><strong>+18.1 km²</strong><span>net change in built-up area</span></p>
+        <p>In cells the model is sure of on both dates (confidence ≥ 0.8): 4.5 km² became built-up, 8.6 km² changed in total.</p>
+      </section>
+
+      <section>
+        <h2>Land cover on both dates</h2>
+        <table>
+          <caption>Share of the analysed area in each group, in percent; ± is the difference in percentage points.</caption>
+          <thead><tr><th></th><th>2016</th><th>2025</th><th>±</th></tr></thead>
+          <tbody>
+          <tr><td><span class="name"><i class="swatch c-agriculture"></i>Agriculture</span>
+            <small class="trend">increased</small></td>
+            <td>2.6%</td><td>5.1%</td><td>+2.5</td></tr>
+          <tr><td><span class="name"><i class="swatch c-vegetation"></i>Natural vegetation</span>
+            <small class="trend">decreased</small></td>
+            <td>66.6%</td><td>59.5%</td><td>-7.1</td></tr>
+          <tr><td><span class="name"><i class="swatch c-built"></i>Built-up</span>
+            <small class="trend">increased</small></td>
+            <td>30.8%</td><td>35.4%</td><td>+4.6</td></tr>
+          <tr><td><span class="name"><i class="swatch c-water"></i>Water</span>
+            <small class="trend">no notable change</small></td>
+            <td>0%</td><td>0%</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Largest transitions (confident cells)</h2>
+        <ul class="transitions">
+          <li><span>Natural vegetation → Built-up</span><span>4.5 km²</span></li>
+          <li><span>Built-up → Agriculture</span><span>2 km²</span></li>
+          <li><span>Built-up → Natural vegetation</span><span>0.8 km²</span></li>
+          <li><span>Natural vegetation → Agriculture</span><span>0.8 km²</span></li>
+          <li><span>Agriculture → Natural vegetation</span><span>0.4 km²</span></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Limits</h2>
+        <ul class="limits-list">
+          <li>Every value shown is a model estimate, not a measurement.</li>
+          <li>Areas are not measurements but approximations counted from cells. The figures are always computed on 640 m cells; the scale only changes how the map is drawn.</li>
+          <li>The model was trained on European images only; results for places tagged &quot;experimental&quot; are less reliable.</li>
+          <li>Clouds, shadows and seasonal differences can show change that is not there.</li>
+        </ul>
+      </section>
+    </article>
+
+    <nav class="page-others" aria-label="Other examples">
+      <h2>Other examples</h2>
+      <ul>
+        <li><a href="/examples/istanbul-airport/">Istanbul (around the airport)</a></li>
+        <li><a href="/examples/ankara/">Ankara</a></li>
+        <li><a href="/examples/izmir/">Izmir</a></li>
+        <li><a href="/examples/trabzon/">Trabzon</a></li>
+        <li><a href="/examples/sanliurfa/">Şanlıurfa</a></li>
+        <li><a href="/examples/london/">London</a></li>
+        <li><a href="/examples/paris/">Paris</a></li>
+        <li><a href="/examples/berlin/">Berlin</a></li>
+        <li><a href="/examples/tokyo/">Tokyo</a></li>
+        <li><a href="/examples/beijing/">Beijing</a></li>
+        <li><a href="/examples/riyadh/">Riyadh</a></li>
+        <li><a href="/examples/cairo/">Cairo</a></li>
+        <li><a href="/examples/addis-ababa/">Addis Ababa</a></li>
+        <li><a href="/examples/washington/">Washington, D.C.</a></li>
+        <li><a href="/examples/ottawa/">Ottawa</a></li>
+        <li><a href="/examples/mexico-city/">Mexico City</a></li>
+        <li><a href="/examples/brasilia/">Brasília</a></li>
+        <li><a href="/examples/buenos-aires/">Buenos Aires</a></li>
+        <li><a href="/examples/lima/">Lima</a></li>
+        <li><a href="/examples/canberra/">Canberra</a></li>
+        <li><a href="/examples/wellington/">Wellington</a></li>
+        <li><a href="/examples/port-moresby/">Port Moresby</a></li>
+      </ul>
+      <p><a href="/examples/">All example analyses</a></p>
+    </nav>
+  </main>
+  <footer class="page-foot">
+    <p>Sentinel-2 cloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data)</p>
+    <p><a href="https://github.com/DuranOzcelik/land-change">Source code on GitHub</a></p>
+  </footer>
+</body>
+</html>
