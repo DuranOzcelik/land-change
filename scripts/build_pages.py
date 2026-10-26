@@ -18,8 +18,10 @@ import html
 import json
 import math
 import re
+import subprocess
 import sys
 import urllib.parse
+from functools import lru_cache
 from pathlib import Path
 
 import datajs
@@ -616,6 +618,45 @@ def examples_index(stories, figures, langs, lang, csp):
     return head + page_body(lang, langs, path, main)
 
 
+# ------------------------------------------------------------------ sitemap
+
+@lru_cache(maxsize=None)
+def content_date(*paths):
+    """The day the given source files last changed, from git history: stable across reruns (never
+    the build time), and unaffected by edits to unrelated files. A path with no commit yet (added
+    in the same change as this run) falls back to today, which the next commit fixes."""
+    best = None
+    for path in paths:
+        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(path)],
+                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+        if out:
+            best = out if best is None else max(best, out)
+    import datetime
+    return best or datetime.date.today().isoformat()
+
+
+def sitemap(stories, langs):
+    index_src = (DOCS / "index.html", DOCS / "i18n.js")
+    examples_src = tuple((DOCS / "data" / "stories" / f"{s['id']}.js") for s in stories) + (DOCS / "data" / "stories.js",)
+    entries = [("", content_date(*index_src))]
+    entries += [(f"examples/{s['id']}/", content_date(DOCS / "data" / "stories" / f"{s['id']}.js")) for s in stories]
+    entries.append(("examples/", content_date(*examples_src)))
+
+    def xml_url(path, lastmod):
+        links = "".join(f'<xhtml:link rel="alternate" hreflang="{code}" href="{esc(page_url(lang, path))}"/>'
+                        for code, lang in (("en", "en"), ("tr", "tr"), ("x-default", "en")))
+        urls = [f"<url><loc>{esc(page_url('en', path))}</loc><lastmod>{lastmod}</lastmod>{links}</url>"]
+        urls.append(f"<url><loc>{esc(page_url('tr', path))}</loc><lastmod>{lastmod}</lastmod>{links}</url>")
+        return "\n  ".join(urls)
+
+    urls = "\n  ".join(xml_url(path, lastmod) for path, lastmod in entries)
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  {urls}
+</urlset>
+"""
+
+
 def write(path, text, written):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8", newline="\n")
@@ -639,6 +680,8 @@ def main():
             page, figures[story["id"]] = example_page(story, raw, langs, lang, stories, csp, geo)
             write(base / story["id"] / "index.html", page, written)
         write(base / "index.html", examples_index(stories, figures, langs, lang, csp), written)
+
+    write(DOCS / "sitemap.xml", sitemap(stories, langs), written)
     print(f"{len(written)} files written")
 
 
