@@ -256,123 +256,209 @@
 
   /* ------------------------------------------------------------------ split view */
 
-  // MapLibre layers cannot be clipped, so the later date lives in a second, camera-locked
-  // map stacked on the first one and clipped to the right of the handle.
+  // MapLibre layers cannot be clipped, so the later date lives in a second, camera-locked map
+  // stacked on the first one. It is clipped to the part of the analysed square right of the handle:
+  // a polygon through the square's four corners as projected on screen, so it follows the globe's
+  // curvature. The second map, the handle and every listener exist only while the split is open.
+  const SPLIT_MIN_PX = 80;          // shortest side of the square on screen that still shows the handle
+  const SPLIT_EVENTS = ["move", "zoom", "resize"];
+  const splitHandle = $("split-handle");
+  const mapWrap = $("map-wrap");
+  let splitCorners = null;          // the analysed square: top-left, top-right, bottom-right, bottom-left
+  let splitAbort = null;            // removes the DOM listeners; null while the split is closed
+  let splitFrame = 0;               // pending animation frame
   let afterMap = null;
   let afterReady = null;
   const maps = () => (afterMap ? [map, afterMap] : [map]);
 
   function syncCamera() {
-    if (!afterMap || $("map-after").hidden) return;
+    if (!afterMap) return;
     afterMap.jumpTo({
       center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(),
       pitch: map.getPitch(), padding: map.getPadding(),
     });
   }
-  map.on("move", syncCamera);
-  map.on("resize", syncCamera);
 
   function ensureAfterMap() {
     if (afterReady) return afterReady;
-    afterMap = new maplibregl.Map({
+    const target = new maplibregl.Map({
       container: "map-after", style: baseStyle(), interactive: false, attributionControl: false,
       center: map.getCenter(), zoom: map.getZoom(),
     });
-    afterMap.on("resize", syncCamera);
-    afterReady = new Promise((resolve) => afterMap.on("load", () => {
-      addFrame(afterMap);
+    afterMap = target;
+    afterReady = new Promise((resolve) => target.once("load", () => {
+      if (target !== afterMap) return;    // the split closed before the map loaded
+      addFrame(target);
       if (frameCorners) setFrame(frameCorners);
       placeMarkers();
       syncCamera();
-      resolve(afterMap);
+      resolve(target);
     }));
     return afterReady;
   }
 
-  const splitHandle = $("split-handle");
-  const mapWrap = $("map-wrap");
+  const lerp = (a, b, s) => ({ x: a.x + (b.x - a.x) * s, y: a.y + (b.y - a.y) * s });
+  const projectSquare = () => splitCorners.map((c) => map.project(c));
 
-  // The handle lives on the analysed square: its position is a share of the square's width, so it
-  // follows the square when the map is panned or zoomed. It also stays on the visible map: inside
-  // the screen and, on wide screens, between the panels. Returns the range in map pixels.
-  function splitRange() {
-    const w = Math.max(mapWrap.clientWidth, 88), h = mapWrap.clientHeight;
-    let lo = 22, hi = w - 22;
-    if (wide()) {
-      lo = Math.max(lo, $("controls").getBoundingClientRect().right + 22);
-      if (!$("results").hidden) hi = Math.min(hi, $("results").getBoundingClientRect().left - 22);
-      if (hi <= lo) { lo = 22; hi = w - 22; }
-    }
-    let top = 0, bottom = h;
-    if (frameCorners) {
-      const pts = frameCorners.map((c) => map.project(c));
-      const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
-      const left = Math.max(lo, Math.min(...xs)), right = Math.min(hi, Math.max(...xs));
-      // Keep the visible-map range when the square is off screen or too narrow to hold the knob.
-      if (right - left >= 44) { lo = left; hi = right; }
-      top = Math.max(0, Math.min(...ys));
-      bottom = Math.min(h, Math.max(...ys));
-      if (bottom - top < 88) { top = 0; bottom = h; }
-    }
-    return { lo, hi, top, bottom };
+  // The square counts as out of view when its screen box misses the map, or when its centre is far
+  // enough round the globe to sit behind it.
+  function squareInView(pts, w, h) {
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    if (Math.max(...xs) < 0 || Math.min(...xs) > w || Math.max(...ys) < 0 || Math.min(...ys) > h) return false;
+    const rad = Math.PI / 180;
+    const lon = splitCorners.reduce((s, c) => s + c[0], 0) / 4, lat = splitCorners.reduce((s, c) => s + c[1], 0) / 4;
+    const { lng: clon, lat: clat } = map.getCenter();
+    const cos = Math.sin(lat * rad) * Math.sin(clat * rad) + Math.cos(lat * rad) * Math.cos(clat * rad) * Math.cos((lon - clon) * rad);
+    return cos > Math.cos(80 * rad);
   }
 
-  function moveSplit(share) {
-    state.split = Math.min(1, Math.max(0, share));
-    const r = splitRange();
-    const x = r.lo + state.split * (r.hi - r.lo);
-    $("map-after").style.clipPath = `inset(0 0 0 ${x}px)`;
-    splitHandle.style.left = `${x}px`;
-    splitHandle.style.top = `${r.top}px`;
-    splitHandle.style.bottom = `${mapWrap.clientHeight - r.bottom}px`;
+  // Share (0-1) of the segment a + t(b - a) that lies inside the w x h map, as [from, to].
+  function visiblePart(a, b, w, h) {
+    let from = 0, to = 1;
+    for (const [p, d, max] of [[a.x, b.x - a.x, w], [a.y, b.y - a.y, h]]) {
+      if (Math.abs(d) < 1e-9) { if (p < 0 || p > max) return null; continue; }
+      const t0 = (0 - p) / d, t1 = (max - p) / d;
+      from = Math.max(from, Math.min(t0, t1));
+      to = Math.min(to, Math.max(t0, t1));
+    }
+    return to > from ? [from, to] : null;
+  }
+
+  // Lays out the clip polygon, the line and the knob from the current camera.
+  function drawSplit() {
+    splitFrame = 0;
+    if (!splitAbort) return;
+    const after = $("map-after");
+    const w = mapWrap.clientWidth, h = mapWrap.clientHeight;
+    const pts = projectSquare();
+    const [tl, tr, br, bl] = pts;
+    const shortSide = Math.min(...pts.map((p, i) => Math.hypot(pts[(i + 1) % 4].x - p.x, pts[(i + 1) % 4].y - p.y)));
+    const top = lerp(tl, tr, state.split), bottom = lerp(bl, br, state.split);
+    const seen = shortSide >= SPLIT_MIN_PX && squareInView(pts, w, h) && visiblePart(top, bottom, w, h);
+    splitHandle.hidden = !seen;
+    if (!seen) {
+      // Too small or out of view: the square shows the earlier date only.
+      after.style.clipPath = "polygon(0 0, 0 0, 0 0)";
+      return;
+    }
+    after.style.clipPath = `polygon(${[top, tr, br, bottom].map((p) => `${p.x}px ${p.y}px`).join(", ")})`;
+    const length = Math.hypot(bottom.x - top.x, bottom.y - top.y);
+    const angle = Math.atan2(bottom.y - top.y, bottom.x - top.x) - Math.PI / 2;
+    // The knob sits in the middle of the part of the line that is on screen.
+    const [from, to] = seen;
+    const at = Math.min(length - 22, Math.max(22, ((from + to) / 2) * length));
+    splitHandle.style.left = `${top.x}px`;
+    splitHandle.style.top = `${top.y}px`;
+    splitHandle.style.height = `${length}px`;
+    splitHandle.style.transform = `translateX(-50%) rotate(${angle}rad)`;
+    splitHandle.style.setProperty("--at", `${at}px`);
+  }
+
+  // Camera and window changes redraw at most once per frame.
+  function scheduleSplit() {
+    if (!splitFrame) splitFrame = requestAnimationFrame(drawSplit);
+  }
+
+  function labelSplit() {
     const pct = Math.round(state.split * 100);
     splitHandle.setAttribute("aria-valuenow", String(pct));
     splitHandle.setAttribute("aria-valuetext", t("splitValue").replace("{n}", num(100 - pct, 0)));
   }
-  map.on("move", () => { if (!splitHandle.hidden) moveSplit(state.split); });
 
-  function setSplit(on) {
-    splitHandle.hidden = !on;
-    $("map-after").hidden = !on;
-    if (!on) return;
-    if (afterMap) { afterMap.resize(); syncCamera(); }
-    moveSplit(state.split);
+  function moveSplit(share) {
+    state.split = Math.min(1, Math.max(0, share));
+    labelSplit();
+    drawSplit();
+  }
+
+  // Share of the square's width at a pointer position, measured along the line through the
+  // middles of its left and right edges.
+  function shareAt(e) {
+    const box = mapWrap.getBoundingClientRect();
+    const [tl, tr, br, bl] = projectSquare();
+    const l = lerp(tl, bl, 0.5), r = lerp(tr, br, 0.5);
+    const dx = r.x - l.x, dy = r.y - l.y;
+    return ((e.clientX - box.left - l.x) * dx + (e.clientY - box.top - l.y) * dy) / Math.max(1, dx * dx + dy * dy);
+  }
+
+  function listenSplit(signal) {
+    const on = (target, type, fn, opts = {}) => target.addEventListener(type, fn, { ...opts, signal });
+    // The handle takes the pointer, so dragging it moves the split and never pans the map.
+    on(splitHandle, "pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      splitHandle.setPointerCapture(e.pointerId);
+      splitHandle.classList.add("dragging");
+      moveSplit(shareAt(e));
+    });
+    on(splitHandle, "pointermove", (e) => {
+      if (splitHandle.hasPointerCapture(e.pointerId)) moveSplit(shareAt(e));
+    });
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach((ev) =>
+      on(splitHandle, ev, () => splitHandle.classList.remove("dragging")));
+    // The handle sits on the map, so the wheel over it zooms the map instead of scrolling the page.
+    on(splitHandle, "wheel", (e) => {
+      e.preventDefault();
+      map.getCanvas().dispatchEvent(new WheelEvent("wheel", e));
+    }, { passive: false });
+    on(splitHandle, "keydown", (e) => {
+      const step = e.shiftKey || e.key.startsWith("Page") ? 0.1 : 0.02;
+      const next = {
+        ArrowLeft: state.split - step, ArrowDown: state.split - step, PageDown: state.split - step,
+        ArrowRight: state.split + step, ArrowUp: state.split + step, PageUp: state.split + step,
+        Home: 0, End: 1,
+      }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      moveSplit(next);
+    });
+    on(window, "resize", scheduleSplit);
+  }
+
+  // Opens the split on the given square, or moves an open one there. Resolves with the second map.
+  function openSplit(corners) {
+    splitCorners = corners;
+    if (!splitAbort) {
+      splitAbort = new AbortController();
+      listenSplit(splitAbort.signal);
+      map.on("move", syncCamera);
+      map.on("resize", syncCamera);
+      SPLIT_EVENTS.forEach((ev) => map.on(ev, scheduleSplit));
+      $("map-after").hidden = false;
+    }
+    labelSplit();
+    drawSplit();
+    return ensureAfterMap();
+  }
+
+  // Removes the second map, the handle and every listener the split added.
+  function closeSplit() {
+    if (!splitAbort) return;
+    splitAbort.abort();
+    splitAbort = null;
+    cancelAnimationFrame(splitFrame);
+    splitFrame = 0;
+    map.off("move", syncCamera);
+    map.off("resize", syncCamera);
+    SPLIT_EVENTS.forEach((ev) => map.off(ev, scheduleSplit));
+    if (afterMap) {
+      if (markers.has(afterMap)) markers.get(afterMap).remove();
+      markers.delete(afterMap);
+      afterMap.remove();
+    }
+    afterMap = null;
+    afterReady = null;
+    splitCorners = null;
+    const after = $("map-after");
+    after.hidden = true;
+    after.style.clipPath = "";
+    splitHandle.hidden = true;
+    splitHandle.classList.remove("dragging");
+    splitHandle.removeAttribute("style");
   }
 
   // Default handle position: the middle of the analysed square.
   function centreSplit() { state.split = 0.5; }
-
-  const shareAt = (clientX) => {
-    const r = splitRange();
-    return (clientX - mapWrap.getBoundingClientRect().left - r.lo) / Math.max(1, r.hi - r.lo);
-  };
-  splitHandle.addEventListener("pointerdown", (e) => {
-    splitHandle.setPointerCapture(e.pointerId);
-    splitHandle.classList.add("dragging");
-    moveSplit(shareAt(e.clientX));
-  });
-  splitHandle.addEventListener("pointermove", (e) => {
-    if (splitHandle.hasPointerCapture(e.pointerId)) moveSplit(shareAt(e.clientX));
-  });
-  // The handle sits on the map, so the wheel over it zooms the map instead of scrolling the page.
-  splitHandle.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    map.getCanvas().dispatchEvent(new WheelEvent("wheel", e));
-  }, { passive: false });
-  ["pointerup", "pointercancel"].forEach((ev) =>
-    splitHandle.addEventListener(ev, () => splitHandle.classList.remove("dragging")));
-  addEventListener("resize", () => { if (!splitHandle.hidden) moveSplit(state.split); });
-  splitHandle.addEventListener("keydown", (e) => {
-    const step = e.shiftKey || e.key.startsWith("Page") ? 0.1 : 0.02;
-    const next = {
-      ArrowLeft: state.split - step, ArrowDown: state.split - step, PageDown: state.split - step,
-      ArrowRight: state.split + step, ArrowUp: state.split + step, PageUp: state.split + step,
-      Home: 0, End: 1,
-    }[e.key];
-    if (next === undefined) return;
-    e.preventDefault();
-    moveSplit(next);
-  });
 
   /* ------------------------------------------------------------------ map overlays */
 
@@ -423,6 +509,7 @@
 
   function setPlace(lat, lon, label, fly = true) {
     stopSpin();
+    closeReport();
     lat = Math.max(-60, Math.min(75, lat));
     state.place = { lat, lon, label };
     $("hero").hidden = true;
@@ -543,7 +630,12 @@
     closeDates();
     $("run").textContent = t(RUN_LABEL[mode]);
   }
-  $("mode").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setMode(b.dataset.mode); });
+  $("mode").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (state.data && state.data.mode === "change" && b.dataset.mode !== "change") closeReport();
+    setMode(b.dataset.mode);
+  });
 
   function setCell(cell) {
     state.cell = cell;
@@ -1213,7 +1305,7 @@
     $("map-year").hidden = mode !== "time" || !body.points[state.timeYear];
     if (mode === "time") {
       const side = body.points[state.timeYear];
-      setSplit(false);
+      closeSplit();
       if (!side) return null;
       $("map-year").textContent = state.timeYear;
       paintSide(map, side, null);
@@ -1230,13 +1322,34 @@
     renderLegend(mode, changeLayer, hasInvalid(valid) || (split && hasInvalid(validGrid(body.after))));
     document.querySelectorAll("#color button").forEach((b) => { b.disabled = changeLayer; });
     setFrame(side.image.corners);
-    setSplit(split);
     if (split) {
-      ensureAfterMap().then((target) => {
-        if (state.data && state.data.body === body && state.layer === "split") paintSide(target, body.after, null);
+      openSplit(side.image.corners).then((target) => {
+        if (target === afterMap && state.data && state.data.body === body && state.layer === "split") paintSide(target, body.after, null);
       });
+    } else {
+      closeSplit();
     }
     return side;
+  }
+
+  // A new place or leaving the comparison makes the open report stale: clear it from the panel
+  // and the map, along with the split view.
+  function closeReport() {
+    if (!state.data) return;
+    stopPlaying();
+    closeSplit();
+    state.data = null;
+    const panel = $("results");
+    panel.hidden = true;
+    panel.innerHTML = "";
+    $("legend").hidden = true;
+    $("map-year").hidden = true;
+    ["cells", "scene"].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(id)) map.removeSource(id);
+    });
+    document.documentElement.style.setProperty("--sheet-peek", "0px");
+    history.replaceState(null, "", location.pathname + location.search);
   }
 
   /* ------------------------------------------------------------------ results */

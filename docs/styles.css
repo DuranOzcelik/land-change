@@ -103,10 +103,12 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 #map-after, #map-after * { pointer-events: none; }
 .maplibregl-ctrl-attrib { display: none; }
 
-/* ---------- split view handle: 44px touch strip with a thin visible line ---------- */
+/* ---------- split view handle: 44px touch strip with a thin visible line ----------
+   app.js sets its top, left, height and rotation from the analysed square on screen, and --at,
+   the knob's distance from the top. */
 .split-handle {
-  position: absolute; top: 0; bottom: 0; left: 50%; z-index: 1; width: 44px;
-  transform: translateX(-50%); cursor: ew-resize; touch-action: none; outline: none;
+  position: absolute; top: 0; left: 50%; height: 100%; z-index: 1; width: 44px;
+  transform: translateX(-50%); transform-origin: 50% 0; cursor: ew-resize; touch-action: none; outline: none;
 }
 .split-handle[hidden] { display: none; }
 .split-line {
@@ -114,17 +116,17 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
   background: var(--surface); box-shadow: 0 0 0 1px var(--line);
 }
 .split-knob {
-  position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%);
+  position: absolute; top: var(--at, 50%); left: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%);
   border-radius: 50%; background: var(--surface); box-shadow: 0 0 0 1px var(--ink);
 }
 .split-knob::before, .split-knob::after {
-  content: ""; position: absolute; top: 12px; bottom: 12px; width: 2px; border-radius: 1px; background: var(--ink);
+  content: ""; position: absolute; top: 14px; bottom: 14px; width: 2px; border-radius: 1px; background: var(--ink);
 }
-.split-knob::before { left: 15px; } .split-knob::after { right: 15px; }
+.split-knob::before { left: 17px; } .split-knob::after { right: 17px; }
 .split-handle:focus-visible .split-knob,
 .split-handle.dragging .split-knob { box-shadow: 0 0 0 2px var(--ink), 0 0 0 5px var(--accent); }
 .split-tag {
-  position: absolute; top: calc(50% + 30px); padding: 3px 10px; white-space: nowrap;
+  position: absolute; top: calc(var(--at, 50%) + 32px); padding: 3px 10px; white-space: nowrap;
   border-radius: var(--r-pill); background: var(--surface); color: var(--ink);
   box-shadow: 0 0 0 1px var(--line); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
