@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Land Change: how cities have grown since 2016, by satellite</title>
   <link rel="canonical" href="https://greenloss.com/">
+  <!-- The same page in each language: English at the root, Turkish at /tr/ (built by scripts/build_pages.py). -->
+  <link rel="alternate" hreflang="en" href="https://greenloss.com/">
+  <link rel="alternate" hreflang="tr" href="https://greenloss.com/tr/">
+  <link rel="alternate" hreflang="x-default" href="https://greenloss.com/">
   <meta name="description" content="Pick a place on a 3D globe and see how built-up land, farmland and forest changed since 2016, from Sentinel-2 imagery classified by a neural network.">
   <!-- Only this site, the API, the geocoder and the basemap may be contacted. Styles allow inline
        attributes (cell colours); MapLibre runs its worker from a blob. localhost is for local work. -->
@@ -13,8 +17,10 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#163300">
-  <!-- Link previews do not run scripts, so these stay fixed and in English. -->
+  <!-- Link previews do not run scripts, so these stay fixed, in the page's language. -->
   <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="tr_TR">
   <meta property="og:site_name" content="Land Change">
   <meta property="og:title" content="Land Change: how cities have grown since 2016, by satellite">
   <meta property="og:description" content="Pick a place on a 3D globe and see how built-up land, farmland and forest changed since 2016, from Sentinel-2 imagery classified by a neural network.">
@@ -35,7 +41,7 @@
     "applicationCategory": "EducationalApplication",
     "operatingSystem": "Any",
     "browserRequirements": "Requires JavaScript and WebGL",
-    "inLanguage": ["en", "tr"],
+    "inLanguage": "en",
     "isAccessibleForFree": true,
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "author": { "@type": "Person", "name": "Duran Özçelik", "url": "https://github.com/DuranOzcelik" },
@@ -71,6 +77,7 @@
     <div class="topbar-tools">
       <label class="visually-hidden" for="lang" data-i18n="language">Language</label>
       <select id="lang" class="pill-select"></select>
+      <a class="pill-button ghost lang-link" href="/tr/" hreflang="tr" lang="tr">Türkçe</a>
       <button id="theme" class="pill-button ghost" type="button"></button>
     </div>
   </header>
@@ -183,7 +190,7 @@
             <li><strong>Pick a place</strong><span>A point is picked on the globe or searched for; a square of 5 to 25 km around it is analysed.</span></li>
             <li><strong>Download the image</strong><span>The cloud-free Sentinel-2 image closest to the requested day is downloaded from the Microsoft Planetary Computer catalogue.</span></li>
             <li><strong>Classify</strong><span>The image is cut into 64×64-pixel squares (640 m at 10 m resolution); the model assigns each one of EuroSAT&#39;s 10 classes and reports its confidence.</span></li>
-            <li><strong>Compare</strong><span>The two dates are compared cell by cell; the changed area and the transitions between groups are calculated in km².</span></li>
+            <li><strong data-i18n="stepCompare">Compare</strong><span>The two dates are compared cell by cell; the changed area and the transitions between groups are calculated in km².</span></li>
         </ol></div>
         <div><p class="subhead">Limits</p><ul class="limits-list">
             <li>Every value shown is a model estimate, not a measurement.</li>

@@ -5,6 +5,9 @@ window.LANGS = {
     title: "Arazi Değişimi",
     pageTitle: "Arazi Değişimi: şehirler 2016'dan bugüne nasıl büyüdü?",
     pageDescription: "Küre üzerinde bir yer seç; Sentinel-2 uydu görüntülerinden yapılaşmanın, tarımın ve doğal bitki örtüsünün 2016'dan bugüne nasıl değiştiğini gör.",
+    // Used only in the page HTML (scripts/build_pages.py): link previews and the no-script note.
+    ogImageAlt: "Arazi Değişimi: arazi örtüsü hücreleriyle kaplı bir küre",
+    noscript: "Bu site, küreyi göstermek ve analiz yapmak için JavaScript ve WebGL gerektirir. Kaynak kod şurada:",
     hero: "Şehirler nasıl büyüyor?",
     heroSub: "Bir yer seç; uydu görüntülerinden yapılaşmanın, tarımın ve ormanın yıllar içinde nasıl değiştiğini görelim.",
     searchPlaceholder: "Şehir, ilçe veya koordinat ara",
@@ -201,6 +204,9 @@ window.LANGS = {
     title: "Land Change",
     pageTitle: "Land Change: how cities have grown since 2016, by satellite",
     pageDescription: "Pick a place on a 3D globe and see how built-up land, farmland and forest changed since 2016, from Sentinel-2 imagery classified by a neural network.",
+    // Used only in the page HTML (scripts/build_pages.py): link previews and the no-script note.
+    ogImageAlt: "Land Change: a globe covered with land-cover cells",
+    noscript: "This site needs JavaScript and WebGL to show the globe and run analyses. The source code is on",
     hero: "How are cities growing?",
     heroSub: "Pick a place and see, from satellite images, how built-up land, farmland and forest have changed over the years.",
     searchPlaceholder: "Search a city, district or coordinates",

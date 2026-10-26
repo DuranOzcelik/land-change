@@ -163,6 +163,21 @@ def test_rate_limit():
         main.limiter = RateLimiter(limit=10_000, window_s=60)
 
 
+def test_folder_addresses_redirect_to_their_slash():
+    from pathlib import Path
+
+    from fastapi import FastAPI
+    site = FastAPI()
+    site.mount("/", main.Site(directory=Path(__file__).resolve().parents[2] / "docs", html=True))
+    pages = TestClient(site)
+    res = pages.get("/tr", follow_redirects=False)
+    assert res.status_code == 301 and res.headers["location"] == "/tr/"
+    assert pages.get("/tr?x=1", follow_redirects=False).headers["location"] == "/tr/?x=1"
+    turkish = pages.get("/tr/")
+    assert turkish.status_code == 200 and '<html lang="tr">' in turkish.text
+    assert pages.get("/").status_code == 200 and pages.get("/app.js").status_code == 200
+
+
 def test_gzip_keeps_security_headers():
     gzip = {"Accept-Encoding": "gzip"}
     big = client.get("/api/analyze", params={**PLACE, "when": "2025"}, headers=gzip)

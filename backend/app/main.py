@@ -9,11 +9,12 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
@@ -242,7 +243,20 @@ def timeseries(lat: float = Lat, lon: float = Lon, size_km: float = Size, cell_m
     return {"cell_m": cell_m, "points": points}
 
 
+class Site(StaticFiles):
+    """The front end. A folder address without its slash (/tr) moves permanently to the folder (/tr/).
+    The redirect carries only the path: behind Cloud Run the app sees plain http, so a full URL
+    would send visitors to http."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code in (307, 308) and "location" in response.headers:
+            target = urlsplit(response.headers["location"])
+            return RedirectResponse(target.path + (f"?{target.query}" if target.query else ""), status_code=301)
+        return response
+
+
 # The front end is served by the same service. Registered last so the API routes win.
 _site = Path(__file__).resolve().parent.parent / "static"
 if _site.is_dir():
-    app.mount("/", StaticFiles(directory=_site, html=True), name="site")
+    app.mount("/", Site(directory=_site, html=True), name="site")

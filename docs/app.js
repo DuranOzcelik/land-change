@@ -25,14 +25,19 @@
     set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode */ } },
   };
 
-  // Language follows the visitor's location: Turkish in Turkey, English elsewhere. The time zone
-  // is used as the signal, so no address lookup is needed; a manual choice is remembered.
+  // Data files and pages are found next to this script, so the app works at / and at /tr/.
+  const BASE = new URL(".", document.currentScript.src).href;
+
+  // The Turkish page (/tr/) opens in Turkish. At the root, language follows the visitor's location:
+  // Turkish in Turkey, English elsewhere. The time zone is used as the signal, so no address lookup
+  // is needed; a manual choice is remembered. Switching changes the interface only, never the address.
   const inTurkey = () => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone === "Europe/Istanbul"; } catch { return false; }
   };
+  const pageLang = document.documentElement.lang;
 
   const state = {
-    lang: store.get("lang") || (inTurkey() ? "tr" : "en"),
+    lang: pageLang === "tr" ? "tr" : store.get("lang") || (inTurkey() ? "tr" : "en"),
     theme: store.get("theme") || "dark",
     place: null,          // { lat, lon, label }
     mode: "now",          // "now" | "change" | "time"
@@ -1842,7 +1847,7 @@
     if (!dataCache.has(name)) {
       const loading = new Promise((resolve, reject) => {
         const el = document.createElement("script");
-        el.src = `data/${name}.js`;
+        el.src = `${BASE}data/${name}.js`;
         el.onload = () => {
           const data = window.LC_DATA && window.LC_DATA[name];
           if (data) resolve(data); else reject(new Error(name));
@@ -2002,7 +2007,7 @@
       const text = s.description[state.lang] || "";
       return `<li class="story">
         <button type="button" class="story-open" data-story="${esc(s.id)}">
-          <img src="data/stories/${esc(s.id)}-thumb.jpg" alt="" loading="lazy" width="320" height="240">
+          <img src="${BASE}data/stories/${esc(s.id)}-thumb.jpg" alt="" loading="lazy" width="320" height="240">
           <strong>${esc(storyTitle(s))}</strong>
           <span class="meta">${esc(s.dates.before)} → ${esc(s.dates.after)} &nbsp; ${num(s.location.size_km, 0)} km
             ${s.experimental ? `<span class="tag">${esc(t("experimental"))}</span>` : ""}</span>
