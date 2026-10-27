@@ -499,11 +499,15 @@
     });
   }
 
+  // The analysed square is square on the UTM grid, which sits turned by a degree or two against the
+  // map (meridian convergence). The map turns by the same angle, so the square's edges stay level.
   function fit(corners, duration = 1400) {
     const lons = corners.map((c) => c[0]);
     const lats = corners.map((c) => c[1]);
+    const [tl, tr] = corners.map((c) => maplibregl.MercatorCoordinate.fromLngLat(c));
+    const bearing = (Math.atan2(tr.y - tl.y, tr.x - tl.x) * 180) / Math.PI;
     map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
-      { padding: padding(), duration: reducedMotion ? 0 : duration });
+      { padding: padding(), bearing, duration: reducedMotion ? 0 : duration });
   }
 
   function setImage(target, id, url, coordinates, paint) {
