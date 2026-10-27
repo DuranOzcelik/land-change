@@ -98,7 +98,10 @@
   const wide = () => innerWidth > 860;
   const baseStyle = () => ({
     version: 8,
-    projection: { type: "globe" },
+    // A globe from afar that is fully flat (mercator) by zoom 8. MapLibre's own "globe" preset keeps
+    // blending up to zoom 12, where reports open; mid-blend, map.project() misses the drawn map by
+    // 10-20 px, which put the comparison handle and clip off the analysed square.
+    projection: { type: ["interpolate", ["linear"], ["zoom"], 6, "vertical-perspective", 8, "mercator"] },
     sources: { sat: { type: "raster", tiles: [BASEMAP], tileSize: 256, maxzoom: 14 } },
     layers: [
       { id: "ocean", type: "background", paint: { "background-color": "#06192c" } },
