@@ -598,6 +598,630 @@
     "before": "2016",
     "after": "2025"
    }
+  },
+  {
+   "id": "istanbul",
+   "title": {
+    "tr": "İstanbul",
+    "en": "İstanbul"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 41.00638,
+    "lon": 28.97587,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "shanghai",
+   "title": {
+    "tr": "Şanghay",
+    "en": "Shanghai"
+   },
+   "group": "asia",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 31.23234,
+    "lon": 121.4691,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "delhi",
+   "title": {
+    "tr": "Delhi",
+    "en": "Delhi"
+   },
+   "group": "asia",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 28.66645,
+    "lon": 77.21698,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "los-angeles",
+   "title": {
+    "tr": "Los Angeles",
+    "en": "Los Angeles"
+   },
+   "group": "north_america",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 34.05369,
+    "lon": -118.24277,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "melbourne",
+   "title": {
+    "tr": "Melbourne",
+    "en": "Melbourne"
+   },
+   "group": "oceania",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": -37.81425,
+    "lon": 144.96317,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "rome",
+   "title": {
+    "tr": "Roma",
+    "en": "Rome"
+   },
+   "group": "europe",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 41.89332,
+    "lon": 12.48293,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "new-york",
+   "title": {
+    "tr": "New York",
+    "en": "New York"
+   },
+   "group": "north_america",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 40.71273,
+    "lon": -74.00602,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "dubai",
+   "title": {
+    "tr": "Dubai",
+    "en": "Dubai"
+   },
+   "group": "asia",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 25.26472,
+    "lon": 55.29241,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "sao-paulo",
+   "title": {
+    "tr": "São Paulo",
+    "en": "São Paulo"
+   },
+   "group": "south_america",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": -23.55065,
+    "lon": -46.63338,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "singapore",
+   "title": {
+    "tr": "Singapur",
+    "en": "Singapore"
+   },
+   "group": "asia",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 1.28992,
+    "lon": 103.85191,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "madrid",
+   "title": {
+    "tr": "Madrid",
+    "en": "Madrid"
+   },
+   "group": "europe",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 40.41678,
+    "lon": -3.70351,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "sydney",
+   "title": {
+    "tr": "Sidney",
+    "en": "Sydney"
+   },
+   "group": "oceania",
+   "experimental": true,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": -33.86984,
+    "lon": 151.20828,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "rankings.js (scripts/cities.csv)"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "bursa",
+   "title": {
+    "tr": "Bursa",
+    "en": "Bursa"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 40.1826,
+    "lon": 29.0665,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "antalya",
+   "title": {
+    "tr": "Antalya",
+    "en": "Antalya"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 36.8969,
+    "lon": 30.7133,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "konya",
+   "title": {
+    "tr": "Konya",
+    "en": "Konya"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 37.8746,
+    "lon": 32.4932,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "adana",
+   "title": {
+    "tr": "Adana",
+    "en": "Adana"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 37.0,
+    "lon": 35.3213,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "gaziantep",
+   "title": {
+    "tr": "Gaziantep",
+    "en": "Gaziantep"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 37.0662,
+    "lon": 37.3833,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "kayseri",
+   "title": {
+    "tr": "Kayseri",
+    "en": "Kayseri"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 38.7312,
+    "lon": 35.4787,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "eskisehir",
+   "title": {
+    "tr": "Eskişehir",
+    "en": "Eskisehir"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 39.7767,
+    "lon": 30.5206,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "mersin",
+   "title": {
+    "tr": "Mersin",
+    "en": "Mersin"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 36.8121,
+    "lon": 34.6415,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "diyarbakir",
+   "title": {
+    "tr": "Diyarbakır",
+    "en": "Diyarbakir"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 37.9144,
+    "lon": 40.2306,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "samsun",
+   "title": {
+    "tr": "Samsun",
+    "en": "Samsun"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 41.2867,
+    "lon": 36.33,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "denizli",
+   "title": {
+    "tr": "Denizli",
+    "en": "Denizli"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 37.7765,
+    "lon": 29.0864,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
+  },
+  {
+   "id": "kocaeli",
+   "title": {
+    "tr": "Kocaeli (İzmit)",
+    "en": "Kocaeli (Izmit)"
+   },
+   "group": "turkey",
+   "experimental": false,
+   "description": {
+    "tr": "",
+    "en": ""
+   },
+   "sources": [],
+   "approved": false,
+   "location": {
+    "lat": 40.7654,
+    "lon": 29.9408,
+    "size_km": 20,
+    "cell_m": 640,
+    "geocoded_as": "city centre coordinates"
+   },
+   "dates": {
+    "before": "2016",
+    "after": "2025"
+   }
   }
  ]
 };
