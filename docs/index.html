@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Land Change: how cities have grown since 2016, by satellite</title>
+  <title>GreenLoss: how cities have grown since 2016, by satellite</title>
   <link rel="canonical" href="https://greenloss.com/">
   <!-- The same page in each language: English at the root, Turkish at /tr/ (built by scripts/build_pages.py). -->
   <link rel="alternate" hreflang="en" href="https://greenloss.com/">
@@ -21,21 +21,31 @@
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="tr_TR">
-  <meta property="og:site_name" content="Land Change">
-  <meta property="og:title" content="Land Change: how cities have grown since 2016, by satellite">
+  <meta property="og:site_name" content="GreenLoss">
+  <meta property="og:title" content="GreenLoss: how cities have grown since 2016, by satellite">
   <meta property="og:description" content="Pick a place on a 3D globe and see how built-up land, farmland and forest changed since 2016, from Sentinel-2 imagery classified by a neural network.">
   <meta property="og:url" content="https://greenloss.com/">
   <meta property="og:image" content="https://greenloss.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Land Change: a globe covered with land-cover cells">
+  <meta property="og:image:alt" content="GreenLoss: a globe covered with land-cover cells">
   <meta name="twitter:card" content="summary_large_image">
-  <!-- Structured data for search engines: a data block, never executed, so the CSP is unaffected. -->
+  <!-- Structured data for search engines: data blocks, never executed, so the CSP is unaffected.
+       The WebSite block gives the site name search results show for greenloss.com. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "GreenLoss",
+    "alternateName": ["Green Loss", "greenloss.com"],
+    "url": "https://greenloss.com/"
+  }
+  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Land Change",
+    "name": "GreenLoss",
     "url": "https://greenloss.com/",
     "description": "Pick a place on a 3D globe and see how built-up land, farmland and forest changed since 2016, from Sentinel-2 imagery classified by a neural network.",
     "applicationCategory": "EducationalApplication",
@@ -68,7 +78,7 @@
   </div>
 
   <header class="topbar">
-    <a class="wordmark" href="./" data-i18n="title">Land Change</a>
+    <a class="wordmark" href="./" data-i18n="title">GreenLoss</a>
     <nav class="section-links" data-i18n-label="exploreLabel" aria-label="Explore">
       <button class="pill-button ghost" type="button" data-scroll="examples" data-i18n="examplesTitle">Example analyses</button>
       <button class="pill-button ghost" type="button" data-scroll="rankings" data-i18n="rankingsTitle">City ranking</button>
@@ -185,7 +195,7 @@
     <section class="section" id="about" aria-labelledby="about-title">
       <h2 id="about-title" data-i18n="aboutTitle">How it works</h2>
       <div class="section-body" id="about-body">
-        <p class="lead">Land Change downloads the Sentinel-2 satellite image of the chosen place, cuts it into 64×64-pixel squares, classifies them with a ResNet18 model trained on the EuroSAT dataset, and reports the land cover or the change between two dates.</p>
+        <p class="lead">GreenLoss downloads the Sentinel-2 satellite image of the chosen place, cuts it into 64×64-pixel squares, classifies them with a ResNet18 model trained on the EuroSAT dataset, and reports the land cover or the change between two dates.</p>
         <div><p class="subhead">Flow</p><ol class="flow">
             <li><strong>Pick a place</strong><span>A point is picked on the globe or searched for; a square of 5 to 25 km around it is analysed.</span></li>
             <li><strong>Download the image</strong><span>The cloud-free Sentinel-2 image closest to the requested day is downloaded from the Microsoft Planetary Computer catalogue.</span></li>

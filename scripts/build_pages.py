@@ -151,7 +151,7 @@ def translate_app_page(source, langs, lang):
                      "og:locale:alternate": next(v for k, v in LOCALES.items() if k != lang)}.get(prop)
             if value is not None:
                 tag = set_attr(tag, "content", value)
-        elif tag.startswith('<script type="application/ld+json">'):
+        elif tag.startswith('<script type="application/ld+json">') and '"WebSite"' not in tag:
             for key, value in (("name", L["title"]), ("url", page_url(lang)),
                                ("description", L["pageDescription"]), ("inLanguage", lang)):
                 tag = re.sub(rf'("{key}": )"[^"]*"', lambda m: m.group(1) + json.dumps(value, ensure_ascii=False),

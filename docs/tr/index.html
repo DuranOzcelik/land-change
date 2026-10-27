@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Arazi Değişimi: şehirler 2016&#39;dan bugüne nasıl büyüdü?</title>
+  <title>GreenLoss: şehirler 2016&#39;dan bugüne nasıl büyüdü?</title>
   <link rel="canonical" href="https://greenloss.com/tr/">
   <!-- The same page in each language: English at the root, Turkish at /tr/ (built by scripts/build_pages.py). -->
   <link rel="alternate" hreflang="en" href="https://greenloss.com/">
@@ -22,21 +22,31 @@
   <meta property="og:type" content="website">
   <meta property="og:locale" content="tr_TR">
   <meta property="og:locale:alternate" content="en_US">
-  <meta property="og:site_name" content="Arazi Değişimi">
-  <meta property="og:title" content="Arazi Değişimi: şehirler 2016&#39;dan bugüne nasıl büyüdü?">
+  <meta property="og:site_name" content="GreenLoss">
+  <meta property="og:title" content="GreenLoss: şehirler 2016&#39;dan bugüne nasıl büyüdü?">
   <meta property="og:description" content="Küre üzerinde bir yer seç; Sentinel-2 uydu görüntülerinden yapılaşmanın, tarımın ve doğal bitki örtüsünün 2016&#39;dan bugüne nasıl değiştiğini gör.">
   <meta property="og:url" content="https://greenloss.com/tr/">
   <meta property="og:image" content="https://greenloss.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Arazi Değişimi: arazi örtüsü hücreleriyle kaplı bir küre">
+  <meta property="og:image:alt" content="GreenLoss: arazi örtüsü hücreleriyle kaplı bir küre">
   <meta name="twitter:card" content="summary_large_image">
-  <!-- Structured data for search engines: a data block, never executed, so the CSP is unaffected. -->
+  <!-- Structured data for search engines: data blocks, never executed, so the CSP is unaffected.
+       The WebSite block gives the site name search results show for greenloss.com. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "GreenLoss",
+    "alternateName": ["Green Loss", "greenloss.com"],
+    "url": "https://greenloss.com/"
+  }
+  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Arazi Değişimi",
+    "name": "GreenLoss",
     "url": "https://greenloss.com/tr/",
     "description": "Küre üzerinde bir yer seç; Sentinel-2 uydu görüntülerinden yapılaşmanın, tarımın ve doğal bitki örtüsünün 2016'dan bugüne nasıl değiştiğini gör.",
     "applicationCategory": "EducationalApplication",
@@ -69,7 +79,7 @@
   </div>
 
   <header class="topbar">
-    <a class="wordmark" href="/tr/" data-i18n="title">Arazi Değişimi</a>
+    <a class="wordmark" href="/tr/" data-i18n="title">GreenLoss</a>
     <nav class="section-links" data-i18n-label="exploreLabel" aria-label="Keşfet">
       <button class="pill-button ghost" type="button" data-scroll="examples" data-i18n="examplesTitle">Örnek analizler</button>
       <button class="pill-button ghost" type="button" data-scroll="rankings" data-i18n="rankingsTitle">Şehir sıralaması</button>
@@ -186,7 +196,7 @@
     <section class="section" id="about" aria-labelledby="about-title">
       <h2 id="about-title" data-i18n="aboutTitle">Nasıl çalışır</h2>
       <div class="section-body" id="about-body">
-        <p class="lead">Arazi Değişimi, seçilen yerin Sentinel-2 uydu görüntüsünü indirir, görüntüyü 64×64 piksellik karelere bölüp EuroSAT veri kümesiyle eğitilmiş bir ResNet18 modeliyle sınıflandırır ve arazi dağılımını ya da iki tarih arasındaki değişimi raporlar.</p>
+        <p class="lead">GreenLoss, seçilen yerin Sentinel-2 uydu görüntüsünü indirir, görüntüyü 64×64 piksellik karelere bölüp EuroSAT veri kümesiyle eğitilmiş bir ResNet18 modeliyle sınıflandırır ve arazi dağılımını ya da iki tarih arasındaki değişimi raporlar.</p>
         <div><p class="subhead">Akış</p><ol class="flow">
             <li><strong>Yer seçimi</strong><span>Küreden bir nokta seçilir ya da aranır; çevresinde 5 ile 25 km arasında bir kare incelenir.</span></li>
             <li><strong>Görüntü indirme</strong><span>Microsoft Planetary Computer kataloğundan istenen güne en yakın bulutsuz Sentinel-2 görüntüsü indirilir.</span></li>

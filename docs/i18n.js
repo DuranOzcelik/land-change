@@ -2,11 +2,11 @@
 window.LANGS = {
   tr: {
     name: "Türkçe",
-    title: "Arazi Değişimi",
-    pageTitle: "Arazi Değişimi: şehirler 2016'dan bugüne nasıl büyüdü?",
+    title: "GreenLoss",
+    pageTitle: "GreenLoss: şehirler 2016'dan bugüne nasıl büyüdü?",
     pageDescription: "Küre üzerinde bir yer seç; Sentinel-2 uydu görüntülerinden yapılaşmanın, tarımın ve doğal bitki örtüsünün 2016'dan bugüne nasıl değiştiğini gör.",
     // Used only in the page HTML (scripts/build_pages.py): link previews and the no-script note.
-    ogImageAlt: "Arazi Değişimi: arazi örtüsü hücreleriyle kaplı bir küre",
+    ogImageAlt: "GreenLoss: arazi örtüsü hücreleriyle kaplı bir küre",
     noscript: "Bu site, küreyi göstermek ve analiz yapmak için JavaScript ve WebGL gerektirir. Kaynak kod şurada:",
     hero: "Şehirler nasıl büyüyor?",
     heroSub: "Bir yer seç; uydu görüntülerinden yapılaşmanın, tarımın ve ormanın yıllar içinde nasıl değiştiğini görelim.",
@@ -129,7 +129,7 @@ window.LANGS = {
     sectionsCue: "Örnek analizler, şehir sıralaması ve nasıl çalıştığı aşağıda",
     sources: "Kaynaklar",
     aboutTitle: "Nasıl çalışır",
-    aboutIntro: "Arazi Değişimi, seçilen yerin Sentinel-2 uydu görüntüsünü indirir, görüntüyü 64×64 piksellik karelere bölüp EuroSAT veri kümesiyle eğitilmiş bir ResNet18 modeliyle sınıflandırır ve arazi dağılımını ya da iki tarih arasındaki değişimi raporlar.",
+    aboutIntro: "GreenLoss, seçilen yerin Sentinel-2 uydu görüntüsünü indirir, görüntüyü 64×64 piksellik karelere bölüp EuroSAT veri kümesiyle eğitilmiş bir ResNet18 modeliyle sınıflandırır ve arazi dağılımını ya da iki tarih arasındaki değişimi raporlar.",
     aboutFlow: "Akış",
     stepPlace: "Yer seçimi",
     stepPlaceText: "Küreden bir nokta seçilir ya da aranır; çevresinde 5 ile 25 km arasında bir kare incelenir.",
@@ -218,11 +218,11 @@ window.LANGS = {
   },
   en: {
     name: "English",
-    title: "Land Change",
-    pageTitle: "Land Change: how cities have grown since 2016, by satellite",
+    title: "GreenLoss",
+    pageTitle: "GreenLoss: how cities have grown since 2016, by satellite",
     pageDescription: "Pick a place on a 3D globe and see how built-up land, farmland and forest changed since 2016, from Sentinel-2 imagery classified by a neural network.",
     // Used only in the page HTML (scripts/build_pages.py): link previews and the no-script note.
-    ogImageAlt: "Land Change: a globe covered with land-cover cells",
+    ogImageAlt: "GreenLoss: a globe covered with land-cover cells",
     noscript: "This site needs JavaScript and WebGL to show the globe and run analyses. The source code is on",
     hero: "How are cities growing?",
     heroSub: "Pick a place and see, from satellite images, how built-up land, farmland and forest have changed over the years.",
@@ -345,7 +345,7 @@ window.LANGS = {
     sectionsCue: "Example analyses, the city ranking and how it works are below",
     sources: "Sources",
     aboutTitle: "How it works",
-    aboutIntro: "Land Change downloads the Sentinel-2 satellite image of the chosen place, cuts it into 64×64-pixel squares, classifies them with a ResNet18 model trained on the EuroSAT dataset, and reports the land cover or the change between two dates.",
+    aboutIntro: "GreenLoss downloads the Sentinel-2 satellite image of the chosen place, cuts it into 64×64-pixel squares, classifies them with a ResNet18 model trained on the EuroSAT dataset, and reports the land cover or the change between two dates.",
     aboutFlow: "Flow",
     stepPlace: "Pick a place",
     stepPlaceText: "A point is picked on the globe or searched for; a square of 5 to 25 km around it is analysed.",
