@@ -72,6 +72,7 @@
       const m = Number(el.dataset.cell);
       if (m >= 1000) el.textContent = `${num(m / 1000)} km`;
     });
+    showArea();
     renderSections();
     $("run").textContent = t(RUN_LABEL[state.mode]);
     $("date-help").textContent = t(state.mode === "time" ? "timeHelp" : "dateHelp");
@@ -655,7 +656,14 @@
   }
   $("cell").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setCell(Number(b.dataset.cell)); });
 
+  // The chosen width as an area: the square's side and its size in km².
+  function showArea() {
+    const km = Number($("size").value);
+    $("area-hint").textContent = t("areaHint").replace(/\{size\}/g, num(km, 0)).replace("{area}", num(km * km, 0));
+  }
+
   $("size").addEventListener("change", () => {
+    showArea();
     if (state.place) setFrame(approxSquare(state.place.lat, state.place.lon, Number($("size").value)));
   });
 
