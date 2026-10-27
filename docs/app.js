@@ -59,8 +59,11 @@
 
   function applyLanguage() {
     document.documentElement.lang = state.lang;
-    document.title = t("pageTitle");
-    document.querySelector('meta[name="description"]').content = t("pageDescription");
+    // Search engines run this script and may pair it with an older cached i18n.js: never replace
+    // the title or description in the HTML with a bare key name.
+    const own = (key) => (LANGS[state.lang] && LANGS[state.lang][key]) || LANGS.en[key];
+    if (own("pageTitle")) document.title = own("pageTitle");
+    if (own("pageDescription")) document.querySelector('meta[name="description"]').content = own("pageDescription");
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
     document.querySelectorAll("[data-i18n-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nLabel)); });
