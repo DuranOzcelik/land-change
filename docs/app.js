@@ -687,13 +687,24 @@
     document.querySelectorAll("[data-dates]").forEach((b) => b.setAttribute("aria-expanded", "false"));
   }
 
+  // Messages for answers the server gives when it refuses work to keep its running cost bounded.
+  function limitMessage(status, body) {
+    if (status === 503 && body && body.code === "daily_quota") return t("errQuota");
+    if (status === 429 && body && body.code === "analysis_limit") return t("errAnalysisLimit");
+    if (status === 429) return t("errBusy");
+    return null;
+  }
+
   async function fetchDates(year) {
     const key = `${state.place.lat.toFixed(4)},${state.place.lon.toFixed(4)},${year}`;
     if (datesCache.has(key)) return datesCache.get(key);
     datesAbort = new AbortController();
     const params = new URLSearchParams({ lat: state.place.lat.toFixed(5), lon: state.place.lon.toFixed(5), year });
     const res = await fetch(`${API}/api/dates?${params}`, { signal: datesAbort.signal });
-    if (!res.ok) throw new Error(t("errNetwork"));
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(limitMessage(res.status, body) || t("errNetwork"));
+    }
     const { dates } = await res.json();
     datesCache.set(key, dates);
     return dates;
@@ -814,7 +825,7 @@
         const body = await res.json().catch(() => ({}));
         const detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || "");
         throw new Error(res.status === 404 ? t("errNoImagery") : res.status === 422 ? t("errInput") + detail
-          : res.status === 429 ? t("errBusy") : t("errNetwork"));
+          : limitMessage(res.status, body) || t("errNetwork"));
       }
       const raw = await res.json();
       const { body, prior } = await withPrior(state.mode, raw);
@@ -895,7 +906,14 @@
           }
           else {
             series.points[year] = null;
-            (res.status === 404 ? series.missing : series.failed).push(year);
+            const limit = limitMessage(res.status, await res.json().catch(() => ({})));
+            if (limit) {
+              // Refused to protect the service: the remaining years would be refused too.
+              series.limit = limit;
+              series.failed.push(year, ...queue.splice(0));
+            } else {
+              (res.status === 404 ? series.missing : series.failed).push(year);
+            }
           }
         } catch (err) {
           if (err.name === "AbortError") return;
@@ -922,6 +940,8 @@
       if (signal.aborted) {
         setStatus(t("cancelled"));
         button.focus();
+      } else if (series.limit) {
+        setStatus(series.limit, true);
       } else if (!loaded) {
         setStatus(series.failed.length ? t("errNetwork") : t("errNoImagery"), true);
       } else {
