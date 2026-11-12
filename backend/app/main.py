@@ -20,7 +20,7 @@ from PIL import Image
 
 from . import analysis, imagery
 from .model import CLASSES, Classifier
-from .security import SECURITY_HEADERS, RateLimiter, client_address
+from .security import SECURITY_HEADERS, DailyQuota, RateLimiter, client_address
 
 # Interactive API docs are off unless explicitly enabled (API_DOCS=1).
 _docs = os.environ.get("API_DOCS") == "1"
@@ -38,18 +38,57 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 limiter = RateLimiter(limit=int(os.environ.get("RATE_LIMIT", "90")),
                       window_s=int(os.environ.get("RATE_WINDOW_S", "600")))
+# Analyses are what cost money: each satellite scene downloaded and classified is one unit.
+# One address may use HEAVY_LIMIT units per HEAVY_WINDOW_S; the whole service DAILY_LIMIT units a day.
+heavy_limiter = RateLimiter(limit=int(os.environ.get("HEAVY_LIMIT", "40")),
+                            window_s=int(os.environ.get("HEAVY_WINDOW_S", "3600")))
+daily_quota = DailyQuota(limit=int(os.environ.get("DAILY_LIMIT", "400")))
 _heavy = threading.Semaphore(2)     # at most two analyses at once on a small instance
+
+
+def analysis_units(path: str, query) -> int:
+    """How many scenes a request will download and classify (0 for requests that do no analysis)."""
+    if path == "/api/analyze":
+        return 1
+    if path == "/api/compare":
+        return 2
+    if path == "/api/timeseries":
+        try:
+            start = int(query.get("start", 2016))
+            end = int(query.get("end") or date.today().year)
+        except ValueError:
+            return 1
+        return max(1, min(13, end - start + 1))
+    return 0
+
+
+def refuse(detail: str, code: str, status: int, retry: int) -> JSONResponse:
+    return JSONResponse({"detail": detail, "code": code}, status_code=status,
+                        headers={"Retry-After": str(retry), **SECURITY_HEADERS})
 
 
 @app.middleware("http")
 async def guard(request: Request, call_next):
     path = request.url.path
+    units = 0
     if path.startswith("/api/") and path != "/api/meta":
-        allowed, retry = limiter.allow(client_address(request.headers))
+        address = client_address(request.headers)
+        allowed, retry = limiter.allow(address)
         if not allowed:
-            return JSONResponse({"detail": "Too many requests. Please try again later."}, status_code=429,
-                                headers={"Retry-After": str(retry), **SECURITY_HEADERS})
+            return refuse("Too many requests. Please try again later.", "rate_limit", 429, retry)
+        units = analysis_units(path, request.query_params)
+        if units:
+            allowed, retry = heavy_limiter.allow(address, units)
+            if not allowed:
+                return refuse("Too many analyses from this address. Please try again later.",
+                              "analysis_limit", 429, retry)
+            allowed, retry = daily_quota.take(units)
+            if not allowed:
+                return refuse("Today's analysis capacity has been used up. Please try again tomorrow.",
+                              "daily_quota", 503, retry)
     response = await call_next(request)
+    if units and response.status_code == 422:
+        daily_quota.give_back(units)        # rejected before any work was done
     for name, value in SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
     if path.startswith("/api/"):
@@ -149,7 +188,7 @@ def health():
 @app.get("/api/meta")
 def meta():
     return {"classes": CLASSES, "groups": analysis.GROUPS, "cell_sizes": analysis.CELL_SIZES,
-            "stats_cell_m": analysis.BASE_CELL}
+            "stats_cell_m": analysis.BASE_CELL, "analyses_left_today": daily_quota.remaining}
 
 
 @app.get("/api/dates")

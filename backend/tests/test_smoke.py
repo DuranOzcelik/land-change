@@ -47,6 +47,11 @@ def fake_scene(grid, target, **_):
 
 imagery.fetch_scene = fake_scene
 client = TestClient(main.app)
+
+# The smoke tests run many analyses from one address; the cost limits get their own tests below.
+from app.security import DailyQuota, RateLimiter  # noqa: E402
+main.heavy_limiter = RateLimiter(limit=10_000, window_s=3600)
+main.daily_quota = DailyQuota(limit=10_000)
 PLACE = {"lat": 41.26, "lon": 28.74, "size_km": 20}
 
 
@@ -187,3 +192,72 @@ def test_gzip_keeps_security_headers():
     for res in (big, small):
         for name, value in SECURITY_HEADERS.items():
             assert res.headers[name] == value, name
+
+
+def test_units_per_request():
+    q = {"start": "2016", "end": "2025"}
+    assert main.analysis_units("/api/analyze", {}) == 1
+    assert main.analysis_units("/api/compare", {}) == 2
+    assert main.analysis_units("/api/timeseries", q) == 10
+    assert main.analysis_units("/api/timeseries", {"start": "2000", "end": "2030"}) == 13
+    assert main.analysis_units("/api/dates", {}) == 0 and main.analysis_units("/api/meta", {}) == 0
+
+
+def test_rate_limiter_counts_units():
+    limiter = RateLimiter(limit=5, window_s=60)
+    assert limiter.allow("a", 2) == (True, 0) and limiter.allow("a", 2) == (True, 0)
+    allowed, retry = limiter.allow("a", 2)
+    assert allowed is False and 0 < retry <= 61
+    assert limiter.allow("a", 1)[0] is True                  # exactly at the limit
+    assert limiter.allow("b", 6)[0] is False                 # more than the limit at once
+
+
+def test_daily_quota_resets_at_midnight_utc():
+    now = [86400 * 100 + 3600]                               # 01:00 UTC
+    quota = DailyQuota(limit=3, clock=lambda: now[0])
+    assert quota.take(2) == (True, 0)
+    allowed, retry = quota.take(2)
+    assert allowed is False and retry == 23 * 3600 + 1
+    quota.give_back(2)
+    assert quota.remaining == 3
+    quota.take(3)
+    now[0] += 23 * 3600 + 1                                  # next day
+    assert quota.remaining == 3 and quota.take(3) == (True, 0)
+
+
+def test_analysis_limit_per_address():
+    saved = main.heavy_limiter
+    main.heavy_limiter = RateLimiter(limit=3, window_s=3600)
+    try:
+        first = client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2025"})
+        assert first.status_code == 200                      # 2 units
+        blocked = client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2025"})
+        assert blocked.status_code == 429 and blocked.json()["code"] == "analysis_limit"
+        assert int(blocked.headers["retry-after"]) > 0
+        assert client.get("/api/analyze", params={**PLACE, "when": "2025"}).status_code == 200   # 3rd unit
+        assert client.get("/api/dates", params={**PLACE, "year": 1999}).status_code == 422       # not an analysis
+        other = client.get("/api/analyze", params={**PLACE, "when": "2025"},
+                           headers={"x-forwarded-for": "203.0.113.50"})
+        assert other.status_code == 200                      # another address has its own allowance
+    finally:
+        main.heavy_limiter = saved
+
+
+def test_daily_quota_stops_all_analyses():
+    saved = main.daily_quota
+    main.daily_quota = DailyQuota(limit=3)
+    try:
+        assert client.get("/api/meta").json()["analyses_left_today"] == 3
+        bad = client.get("/api/compare", params={**PLACE, "before": "2025", "after": "2016"})
+        assert bad.status_code == 422 and main.daily_quota.remaining == 3     # invalid: units returned
+        assert client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2025"}).status_code == 200
+        full = client.get("/api/compare", params={**PLACE, "before": "2016", "after": "2025"},
+                          headers={"x-forwarded-for": "198.51.100.7"})
+        assert full.status_code == 503 and full.json()["code"] == "daily_quota"
+        for name, value in SECURITY_HEADERS.items():
+            assert full.headers[name] == value
+        assert client.get("/api/analyze", params={**PLACE, "when": "2025"}).status_code == 200   # last unit
+        assert client.get("/api/analyze", params={**PLACE, "when": "2025"}).status_code == 503
+        assert client.get("/health").status_code == 200 and client.get("/api/meta").status_code == 200
+    finally:
+        main.daily_quota = saved
