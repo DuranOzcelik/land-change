@@ -101,6 +101,10 @@ measured here.
 
 - **Rate limit:** 90 API requests per client address in 10 minutes by default (`RATE_LIMIT`,
   `RATE_WINDOW_S`); further requests get `429 Too Many Requests`.
+- **Cost limits:** analyses are counted in scenes downloaded and classified. One address may use 40 per
+  hour and the whole service 400 per UTC day; a budget guard takes the service offline if the monthly
+  budget is still reached. Example analyses and the city ranking keep working. See
+  [`ops/README.md`](ops/README.md).
 - **Restricted cross-origin access:** the site and the API share one origin; CORS allows only origins
   listed in `ALLOWED_ORIGINS` and localhost for development. Only `GET` is accepted.
 - **Security headers** on every response (`X-Content-Type-Options`, `X-Frame-Options`, HSTS,
@@ -125,6 +129,7 @@ measured here.
 
 ```
 backend/     FastAPI service (app/, tests/, Dockerfile, requirements.txt)
+ops/         deploy script, cost limits and the budget guard function
 docs/        the site: index.html, app.js, i18n.js, styles.css, data/, vendor/
 scripts/     data builders: example analyses, city ranking, Natural Earth prior
 notebooks/   model training on EuroSAT
@@ -156,17 +161,15 @@ python -m http.server 8080 --directory docs
 Open `http://localhost:8080`. Opened from localhost, the page uses the public API;
 `?api=http://localhost:8000` points it at a local backend instead.
 
-**Deploy to Cloud Run** (site and API in one service)
+**Deploy to Cloud Run** (site and API in one service), from Cloud Shell:
 
 ```bash
-cd backend
-rm -rf static && cp -r ../docs static
-gcloud run deploy land-change --source . --region europe-west1 \
-  --allow-unauthenticated --max-instances 1 --memory 2Gi --cpu 2 --timeout 300 --concurrency 40 \
-  --service-account land-change-run@PROJECT_ID.iam.gserviceaccount.com
+bash ops/deploy.sh
 ```
 
-The service account is a separate runtime identity with no roles granted.
+The script copies `docs/` into the service and runs `gcloud run deploy` with a single instance and a
+separate runtime service account that has no roles granted. [`ops/README.md`](ops/README.md) covers the
+cost limits and the budget guard.
 
 ## Data and credits
 
