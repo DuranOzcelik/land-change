@@ -43,8 +43,9 @@ retry gcloud functions deploy "$FUNCTION" --gen2 --runtime python312 --region "$
   --service-account "$SA" --trigger-service-account "$SA" \
   --set-env-vars "PROJECT_ID=$PROJECT,REGION=$REGION,SERVICE=$SERVICE" \
   --memory 256Mi --max-instances 1 --no-allow-unauthenticated --quiet
-retry gcloud functions add-invoker-policy-binding "$FUNCTION" --region "$REGION" --project "$PROJECT" \
-  --member "serviceAccount:$SA" >/dev/null
+# The trigger delivers budget messages as the guard's account, which must be allowed to call the function.
+retry gcloud run services add-iam-policy-binding "$FUNCTION" --region "$REGION" --project "$PROJECT" \
+  --member "serviceAccount:$SA" --role roles/run.invoker --quiet >/dev/null
 
 echo "==> Connecting the budget to the topic"
 BILLING="$(gcloud billing projects describe "$PROJECT" --format='value(billingAccountName)')"
@@ -66,10 +67,25 @@ gcloud billing budgets update "${BUDGET##*/}" --billing-account "$BILLING" \
   --notifications-rule-pubsub-topic "projects/$PROJECT/topics/$TOPIC" >/dev/null
 
 echo "==> Test: a notification below the budget must change nothing"
-gcloud pubsub topics publish "$TOPIC" --project "$PROJECT" \
-  --message '{"costAmount": 0, "budgetAmount": 1, "currencyCode": "TEST"}' >/dev/null
-sleep 45
-gcloud functions logs read "$FUNCTION" --region "$REGION" --project "$PROJECT" --limit 5 || true
+echo "   waiting 60 s for the new permissions to take effect"
+sleep 60
+PASSED=""
+for attempt in 1 2 3; do
+  gcloud pubsub topics publish "$TOPIC" --project "$PROJECT" \
+    --message '{"costAmount": 0, "budgetAmount": 1, "currencyCode": "TEST"}' >/dev/null
+  sleep 45
+  if gcloud functions logs read "$FUNCTION" --region "$REGION" --project "$PROJECT" --limit 20 \
+      --format='value(log)' | grep -q "Within budget"; then
+    PASSED=1; break
+  fi
+  echo "   no answer from the function yet; trying again ($attempt/3)"
+done
+if [ -n "$PASSED" ]; then
+  echo "   the function received the test message and did nothing, as expected"
+else
+  echo "WARNING: the function did not answer the test message. Run this script again in a few minutes;" >&2
+  echo "         if it still fails, check the logs: gcloud functions logs read $FUNCTION --region $REGION" >&2
+fi
 URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')"
 echo "==> Site still public: HTTP $(curl -s -o /dev/null -w '%{http_code}' "$URL/health") (200 expected)"
 echo "Done. When the budget is spent the site goes offline; see ops/README.md to bring it back."
